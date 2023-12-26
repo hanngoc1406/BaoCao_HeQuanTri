@@ -48,13 +48,11 @@ CREATE TABLE tblToaTau(
 CREATE TABLE tblHoaDon(
     MaHoaDon NCHAR(6) NOT NULL PRIMARY KEY,
     MaNhanVien NCHAR(6),
-    MaKhachHang NCHAR(6),
     TrangThai INT,
     SoLuong INT,
     ThanhTien MONEY,
     NgayBan DATE,
     FOREIGN KEY (MaNhanVien) REFERENCES tblNhanVien(MaNhanVien),
-    FOREIGN KEY (MaKhachHang) REFERENCES tblKhachHang(MaKhachHang),
 );
 
 CREATE TABLE tblThongTinVe(
@@ -71,14 +69,6 @@ CREATE TABLE tblThongTinVe(
     FOREIGN KEY (MaKhachHang) REFERENCES tblKhachHang(MaKhachHang),
     FOREIGN KEY (MaHoaDon) REFERENCES tblHoaDon(MaHoaDon)
 );
-
--- Hiển thị data
-SELECT * FROM tblNhanVien;
-SELECT * FROM tblKhachHang;
-SELECT * FROM tblToaTau;
-SELECT * FROM tblChuyenTau;
-SELECT * FROM tblThongTinVe;
-SELECT * FROM tblHoaDon;
 
 -- Hiển thị quan hệ
 SELECT
@@ -204,13 +194,14 @@ VALUES
     ('TOA032', 'NA2', 53, N'Giường nằm khoang 4 điều hòa', N'Ga Hà Nội');
 
 -- Dữ liệu mẫu cho tblHoaDon
-INSERT INTO tblHoaDon (MaHoaDon, MaNhanVien, MaKhachHang, TrangThai, SoLuong, ThanhTien, NgayBan)
+INSERT INTO tblHoaDon (MaHoaDon, MaNhanVien, TrangThai, SoLuong, ThanhTien, NgayBan)
 VALUES
-    ('HD001', 'NV001', 'KH001', 1, 1, null, '2023-01-01'),
-    ('HD002', 'NV002', 'KH002', 1, 2, null, '2023-01-01'),
-    ('HD003', 'NV003', 'KH003', 1, 3, null, '2023-02-01'),
-    ('HD004', 'NV004', 'KH004', 1, 4, null, '2023-02-02'),
-    ('HD005', 'NV005', 'KH005', 1, 5, null, '2023-03-01');
+    -- Khách hàng 1
+    ('HD001', 'NV001', 1, null, null, '2023-01-01'),
+    ('HD002', 'NV002', 1, null, null, '2023-01-01'),
+    ('HD003', 'NV003', 1, null, null, '2023-02-01'),
+    ('HD004', 'NV004', 1, null, null, '2023-02-02'),
+    ('HD005', 'NV005', 1, null, null, '2023-03-01');
 
 -- Dữ liệu mẫu cho tblThongTinVe
 INSERT INTO tblThongTinVe (MaVe, MaChuyenTau, MaHoaDon, MaKhachHang, LoaiVe, LoaiCho, Toa, ViTri, GiaVe)
@@ -219,8 +210,15 @@ VALUES
     -- SE1 về SE2
     ('VE001', 'SE1', 'HD001', 'KH001', 'Toàn vé', 'Giường nằm', 2, 5, 1500000),
     ('VE002', 'SE1', 'HD001', 'KH002', 'Toàn vé', 'Giường nằm', 2, 10, 1800000),
-    ('VE003', 'SE2', 'HD002', 'KH001', 'Toàn vé', 'Giường nằm', 2, 5, 1500000),
+
+    -- SE19 về SE20
+    ('VE003', 'SE19', 'HD002', 'KH003', 'Toàn vé', 'Giường nằm', 2, 5, 1500000),
+    ('VE004', 'SE20', 'HD002', 'KH003', 'Toàn vé', 'Giường nằm', 2, 5, 1500000);
+
+
     ('VE004', 'SE2', 'HD002', 'KH002', 'Toàn vé', 'Giường nằm', 2, 10, 1800000);
+
+SELECT * FROM tblThongTinVe
 
 -- Test Data
 SELECT tblChuyenTau.MaChuyenTau, COUNT(MaToa) AS SoLuongToa
@@ -228,11 +226,16 @@ FROM tblToaTau
 INNER JOIN tblChuyenTau ON tblChuyenTau.MaChuyenTau = tblToaTau.MaChuyenTau 
 GROUP BY tblChuyenTau.MaChuyenTau;
 
+SELECT MaVe, COUNT(tblHoaDon.MaHoaDon) AS SoHoaDon
+FROM tblHoaDon
+INNER JOIN tblThongTinVe ON tblThongTinVe.MaHoaDon = tblHoaDon.MaHoaDon
+GROUP BY MaHoaDon
+
 /* 
  * Yêu cầu bài tập lớn
     -- Hàm
     1. 
-	2.
+	2. 
     3. Hàm lấy danh sách hóa đơn theo ngày
     4. Hàm Kiểm Tra Trạng Thái Hóa Đơn
     5. Hàm cập nhật giá vé vào bảng hóa đơn
@@ -240,8 +243,8 @@ GROUP BY tblChuyenTau.MaChuyenTau;
     -- Thủ tục
     1. Thủ tục thêm số lượng chỗ của một chuyến tàu theo số lượng toa tàu của một mã tàu
     2. Thủ tục thêm số lượng toa của một chuyến tàu theo số lượng toa tàu của một mã tàu
-    3.
-    4.
+    3. Thủ tục cập nhật số lượng và thành tiền cho bảng hóa đơn
+    4. Thủ tục cập nhật trạng thái hóa đơn
     5.
 
     -- Trigger
@@ -258,10 +261,14 @@ GROUP BY tblChuyenTau.MaChuyenTau;
     4. Danh sách hóa đơn chưa thanh toán
     5. Tạo view hiển thị số lượng toa theo mã tàu
 */
-SELECT * FROM tblToaTau
+
 GO;
 
+/* Bài làm */
+
 -- Hàm
+
+-- Thủ tục
     --1. Thủ tục thêm số lượng toa của một chuyến tàu theo số lượng toa tàu của một mã tàu
 	CREATE PROC proc_ThemSoLuongToa(@MaChuyenTau VARCHAR(6))
     AS
@@ -271,10 +278,9 @@ GO;
         UPDATE tblChuyenTau SET SoLuongToa = @SoLuongToa WHERE MaChuyenTau = @MaChuyenTau;
         RETURN @SoLuongToa;
     END;
-	
-	SELECT * FROM tblChuyenTau
-		SELECT * FROM tblToaTau
 
+    EXEC proc_ThemSoLuongToa SE1
+	
 	--2. Thủ tục thêm số lượng chỗ của một chuyến tàu theo số lượng toa tàu của một mã tàu
 	GO;
 	ALTER PROC proc_ThemSoLuongCho(@MaChuyenTau VARCHAR(6))
@@ -286,43 +292,23 @@ GO;
         UPDATE tblChuyenTau SET SoCho = @SoLuongCho WHERE MaChuyenTau = @MaChuyenTau;
         RETURN @SoLuongCho;
     END;
+
 	EXEC proc_ThemSoLuongCho SE1
+
+    SELECT * FROM tblChuyenTau
+	SELECT * FROM tblToaTau
+
     GO;
-    --2. Hàm thêm số lượng chỗ ngồi của một chuyến tàu theo số lượng chỗ toa tàu của một mã tàu
-    --3. Hàm lấy danh sách hóa đơn theo ngày
-    --4. Hàm Kiểm Tra Trạng Thái Hóa Đơn
-    --5. Hàm cập nhật giá vé vào bảng hóa đơn
 
-
--- 5. Tạo view hiển thị số lượng toa theo mã tàu
-CREATE VIEW vw_chuyetau
-AS
-SELECT tblChuyenTau.MaChuyenTau, COUNT(MaToa) AS SoLuongToa
-FROM tblChuyenTau 
-INNER JOIN tblToaTau ON tblToaTau.MaChuyenTau = tblChuyenTau.MaChuyenTau
-GROUP BY tblChuyenTau.MaChuyenTau;
-
-GO;
-
-SELECT * FROM vw_chuyetau
-
-GO;
-
-CREATE TRIGGER trg_TuDongCapNhatToaChuyenTau
-ON tblToaTau
-AFTER INSERT
-AS
-BEGIN
-    DECLARE @MaChuyenTau NCHAR(6);
-
-    -- Lấy mã chuyến tàu từ bảng inserted
-    SELECT @MaChuyenTau = MaChuyenTau FROM INSERTED
-
-    -- Cập nhật số lượng toa và số lượng chỗ trong bảng chuyến tàu
-    UPDATE tblChuyenTau
-    SET tblChuyenTau.SoLuongToa = COUNT(MaToa),
-        tblChuyenTau.SoCho = SUM(SoLuongCho)
+-- View
+    -- 5. Tạo view hiển thị số lượng toa theo mã tàu
+    CREATE VIEW vw_chuyetau
+    AS
+    SELECT tblChuyenTau.MaChuyenTau, COUNT(MaToa) AS SoLuongToa
     FROM tblChuyenTau 
-    INNER JOIN tblToaTau T ON tblChuyenTau.MaChuyenTau = @MaChuyenTau
-    WHERE tblChuyenTau.MaChuyenTau = @MaChuyenTau
-END;
+    INNER JOIN tblToaTau ON tblToaTau.MaChuyenTau = tblChuyenTau.MaChuyenTau
+    GROUP BY tblChuyenTau.MaChuyenTau;
+
+    GO;
+
+    SELECT * FROM vw_chuyetau
