@@ -231,15 +231,15 @@ GROUP BY tblChuyenTau.MaChuyenTau;
 /* 
  * Yêu cầu bài tập lớn
     -- Hàm
-    1. Hàm thêm số lượng toa của một chuyến tàu theo số lượng toa tàu của một mã tàu
-    2. Hàm thêm số lượng chỗ ngồi của một chuyến tàu theo số lượng chỗ toa tàu của một mã tàu
+    1. 
+	2.
     3. Hàm lấy danh sách hóa đơn theo ngày
     4. Hàm Kiểm Tra Trạng Thái Hóa Đơn
     5. Hàm cập nhật giá vé vào bảng hóa đơn
 
     -- Thủ tục
-    1. Thủ tục thêm số lượng toa của một chuyến tàu theo số lượng toa tàu của một mã tàu
-    2. Thủ tục số lượng chỗ ngồi của một chuyến tàu theo số lượng chỗ toa tàu của một mã tàu
+    1. Thủ tục thêm số lượng chỗ của một chuyến tàu theo số lượng toa tàu của một mã tàu
+    2. Thủ tục thêm số lượng toa của một chuyến tàu theo số lượng toa tàu của một mã tàu
     3.
     4.
     5.
@@ -258,8 +258,41 @@ GROUP BY tblChuyenTau.MaChuyenTau;
     4. Danh sách hóa đơn chưa thanh toán
     5. Tạo view hiển thị số lượng toa theo mã tàu
 */
+SELECT * FROM tblToaTau
+GO;
 
-GO
+-- Hàm
+    --1. Thủ tục thêm số lượng toa của một chuyến tàu theo số lượng toa tàu của một mã tàu
+	CREATE PROC proc_ThemSoLuongToa(@MaChuyenTau VARCHAR(6))
+    AS
+    BEGIN
+        DECLARE @SoLuongToa INT;
+        SELECT @SoLuongToa = COUNT(MaToa) FROM tblToaTau WHERE MaChuyenTau = @MaChuyenTau;
+        UPDATE tblChuyenTau SET SoLuongToa = @SoLuongToa WHERE MaChuyenTau = @MaChuyenTau;
+        RETURN @SoLuongToa;
+    END;
+	
+	SELECT * FROM tblChuyenTau
+		SELECT * FROM tblToaTau
+
+	--2. Thủ tục thêm số lượng chỗ của một chuyến tàu theo số lượng toa tàu của một mã tàu
+	GO;
+	ALTER PROC proc_ThemSoLuongCho(@MaChuyenTau VARCHAR(6))
+    AS
+    BEGIN
+
+        DECLARE @SoLuongCho INT;
+        SELECT @SoLuongCho = SUM(SoLuongCho) FROM tblToaTau WHERE MaChuyenTau = @MaChuyenTau;
+        UPDATE tblChuyenTau SET SoCho = @SoLuongCho WHERE MaChuyenTau = @MaChuyenTau;
+        RETURN @SoLuongCho;
+    END;
+	EXEC proc_ThemSoLuongCho SE1
+    GO;
+    --2. Hàm thêm số lượng chỗ ngồi của một chuyến tàu theo số lượng chỗ toa tàu của một mã tàu
+    --3. Hàm lấy danh sách hóa đơn theo ngày
+    --4. Hàm Kiểm Tra Trạng Thái Hóa Đơn
+    --5. Hàm cập nhật giá vé vào bảng hóa đơn
+
 
 -- 5. Tạo view hiển thị số lượng toa theo mã tàu
 CREATE VIEW vw_chuyetau
