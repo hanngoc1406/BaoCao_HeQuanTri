@@ -229,7 +229,7 @@ GROUP BY tblChuyenTau.MaChuyenTau;
 SELECT MaVe, COUNT(tblHoaDon.MaHoaDon) AS SoHoaDon
 FROM tblHoaDon
 INNER JOIN tblThongTinVe ON tblThongTinVe.MaHoaDon = tblHoaDon.MaHoaDon
-GROUP BY MaHoaDon
+GROUP BY tblHoaDon.MaHoaDon
 
 /* 
  * Yêu cầu bài tập lớn
@@ -241,8 +241,8 @@ GROUP BY MaHoaDon
     5. Hàm cập nhật giá vé vào bảng hóa đơn
 
     -- Thủ tục
-    1. Thủ tục thêm số lượng chỗ của một chuyến tàu theo số lượng toa tàu của một mã tàu
-    2. Thủ tục thêm số lượng toa của một chuyến tàu theo số lượng toa tàu của một mã tàu
+    1. Thủ tục thêm số lượng chỗ của một chuyến tàu theo số lượng toa tàu của một mã tàu - Xong
+    2. Thủ tục thêm số lượng toa của một chuyến tàu theo số lượng toa tàu của một mã tàu - Xong
     3. Thủ tục cập nhật số lượng và thành tiền cho bảng hóa đơn
     4. Thủ tục cập nhật trạng thái hóa đơn
     5.
@@ -262,11 +262,39 @@ GROUP BY MaHoaDon
     5. Tạo view hiển thị số lượng toa theo mã tàu
 */
 
-GO;
 
 /* Bài làm */
 
 -- Hàm
+    --1. 
+	--2. 
+    --3. Hàm lấy danh sách hóa đơn theo ngày
+    GO;
+    CREATE FUNCTION func_LayDanhSachHoaDonTheoNgay(@NgayBan DATE)
+    RETURNS TABLE
+    AS
+    RETURN
+    (
+        SELECT * FROM tblHoaDon WHERE NgayBan = @NgayBan
+    );
+    
+    GO;
+    SELECT * FROM func_LayDanhSachHoaDonTheoNgay('2023-01-01');
+    GO;
+    --4. Hàm Kiểm Tra Trạng Thái Hóa Đơn (1: Chưa thanh toán, 2: Đã thanh toán)
+    GO;
+    CREATE FUNCTION func_KiemTraTrangThaiHoaDon(@MaHoaDon VARCHAR(6))
+    RETURNS INT
+    AS
+    BEGIN
+        DECLARE @TrangThai INT;
+        SELECT @TrangThai = TrangThai FROM tblHoaDon WHERE MaHoaDon = @MaHoaDon;
+        RETURN @TrangThai;
+    END;
+    GO;
+    SELECT dbo.func_KiemTraTrangThaiHoaDon('HD001');
+    GO;
+    --5. Hàm cập nhật thành tiền vào bảng hóa đơn (giá vé * số lượng)
 
 -- Thủ tục
     --1. Thủ tục thêm số lượng toa của một chuyến tàu theo số lượng toa tàu của một mã tàu
@@ -299,6 +327,30 @@ GO;
 	SELECT * FROM tblToaTau
 
     GO;
+    --3. Thủ tục cập nhật số lượng và thành tiền cho bảng hóa đơn
+
+    --4. Thủ tục cập nhật trạng thái hóa đơn
+    CREATE PROC proc_CapNhatTrangThaiHoaDon
+    AS
+    BEGIN
+        UPDATE tblHoaDon SET TrangThai = 1
+        FROM tblHoaDon
+        INNER JOIN tblThongTinVe ON tblThongTinVe.MaHoaDon = tblHoaDon.MaHoaDon;
+    END;
+
+    EXEC proc_CapNhatTrangThaiHoaDon
+
+    GO;
+
+     -- Trigger
+    --1. Trigger mã hóa mật khẩu tài khoản nhân viên
+
+    --2. 
+    --3. 
+    --4.
+    --5. 
+
+
 
 -- View
     -- 5. Tạo view hiển thị số lượng toa theo mã tàu
