@@ -269,6 +269,7 @@ GROUP BY tblHoaDon.MaHoaDon
     --1. 
 	--2. 
     --3. Hàm lấy danh sách hóa đơn theo ngày
+	
     GO;
     CREATE FUNCTION func_LayDanhSachHoaDonTheoNgay(@NgayBan DATE)
     RETURNS TABLE
@@ -277,6 +278,7 @@ GROUP BY tblHoaDon.MaHoaDon
     (
         SELECT * FROM tblHoaDon WHERE NgayBan = @NgayBan
     );
+	--Lấy ra hóa đơn theo ngày
     
     GO;
     SELECT * FROM func_LayDanhSachHoaDonTheoNgay('2023-01-01');
@@ -311,7 +313,7 @@ GROUP BY tblHoaDon.MaHoaDon
 	
 	--2. Thủ tục thêm số lượng chỗ của một chuyến tàu theo số lượng toa tàu của một mã tàu
 	GO;
-	ALTER PROC proc_ThemSoLuongCho(@MaChuyenTau VARCHAR(6))
+	CREATE PROC proc_ThemSoLuongCho(@MaChuyenTau VARCHAR(6))
     AS
     BEGIN
 

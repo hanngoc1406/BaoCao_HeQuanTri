@@ -1,0 +1,68 @@
+1. Hàm
+- Hàm để tính tổng doanh thu của một chuyến tàu
+- Hàm để kiểm tra trạng thái ghế của một vé
+- Hàm để tính tổng số lượng vé đã đặt cho một chuyến tàu
+- Hàm để tính số lượng ghế trống của một toa tàu trong một chuyến tàu
+- Hàm để kiểm tra xem một chuyến tàu có còn vé trống không
+2. Thủ tục
+- Thủ tục để thêm mới hóa đơn và thông tin vé
+- Thủ tục để hủy vé theo mã hóa đơn
+- Thủ tục để cập nhật thông tin vé
+- Thủ tục để cập nhật trạng thái ghế khi thêm mới vé
+- Thủ tục để cập nhật trạng thái ghế khi hủy vé
+3. Trigger
+- Trigger để cập nhật số lượng ghế trống sau khi thêm mới vé
+- Trigger để cập nhật trạng thái ghế khi hủy vé
+- Trigger để cập nhật tổng số lượng vé đã đặt khi thêm mới vé
+- Trigger để cập nhật tổng doanh thu khi thêm mới hóa đơn
+- Trigger để kiểm tra số lượng vé trống khi thêm mới vé
+4. View
+- View để hiển thị danh sách khách hàng và số lượng vé đã đặt
+- View để hiển thị thông tin chuyến tàu và tổng doanh thu
+- View để hiển thị thông tin vé và trạng thái ghế
+- View để hiển thị danh sách hóa đơn và tổng giá trị đơn hàng
+- View để hiển thị thông tin vé và trạng thái ghế của một chuyến tàu
+
+
+Hàm:
+Hàm để tính tổng doanh thu của một chuyến tàu:
+
+Hàm để kiểm tra trạng thái ghế của một vé:
+
+Hàm để tính tổng số lượng vé đã đặt cho một chuyến tàu:
+
+Hàm để tính số lượng ghế trống của một toa tàu trong một chuyến tàu:
+
+Hàm để kiểm tra xem một chuyến tàu có còn vé trống không:
+
+Thủ tục:
+Thủ tục để thêm mới hóa đơn và thông tin vé:
+
+Thủ tục để hủy vé theo mã hóa đơn:
+
+Thủ tục để cập nhật thông tin vé:
+
+Thủ tục để cập nhật trạng thái ghế khi thêm mới vé:
+
+Thủ tục để cập nhật trạng thái ghế khi hủy vé:
+
+Trigger:
+Trigger để cập nhật số lượng ghế trống sau khi thêm mới vé:
+
+Trigger để cập nhật trạng thái ghế khi hủy vé:
+
+Trigger để cập nhật tổng số lượng vé đã đặt khi thêm mới vé:
+
+Trigger để cập nhật tổng doanh thu khi thêm mới hóa đơn:
+
+Trigger để kiểm tra số lượng vé trống khi thêm mới vé:
+View:
+View để hiển thị danh sách khách hàng và số lượng vé đã đặt:
+
+View để hiển thị thông tin chuyến tàu và tổng doanh thu:
+
+View để hiển thị thông tin vé và trạng thái ghế:
+
+View để hiển thị danh sách hóa đơn và tổng giá trị đơn hàng:
+
+View để hiển thị thông tin vé và trạng thái ghế của một chuyến tàu:
