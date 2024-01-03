@@ -226,7 +226,7 @@ FROM tblToaTau
 INNER JOIN tblChuyenTau ON tblChuyenTau.MaChuyenTau = tblToaTau.MaChuyenTau 
 GROUP BY tblChuyenTau.MaChuyenTau;
 
-SELECT MaVe, COUNT(tblHoaDon.MaHoaDon) AS SoHoaDon
+SELECT COUNT(tblHoaDon.MaHoaDon) AS SoHoaDon
 FROM tblHoaDon
 INNER JOIN tblThongTinVe ON tblThongTinVe.MaHoaDon = tblHoaDon.MaHoaDon
 GROUP BY tblHoaDon.MaHoaDon
@@ -297,7 +297,37 @@ GROUP BY tblHoaDon.MaHoaDon
     SELECT dbo.func_KiemTraTrangThaiHoaDon('HD001');
     GO;
     --5. Hàm cập nhật thành tiền vào bảng hóa đơn (giá vé * số lượng)
+    CREATE FUNCTION func_TinhTongTien(@MaHoaDon VARCHAR(6))
+        RETURNS MONEY
+    AS
+    BEGIN 
+        DECLARE @TongTien MONEY
+        SELECT @TongTien = SUM(tblThongTinVe.GiaVe)
+        FROM tblThongTinVe
+        INNER JOIN tblHoaDon ON tblHoaDon.MaHoaDon = tblThongTinVe.MaHoaDon
 
+        RETURN @TongTien;
+    END;
+
+    GO;
+
+    SELECT dbo.func_TinhTongTien('HD001');
+
+    GO;
+
+    DROP FUNCTION func_TinhTongTien
+
+    SELECT tblThongTinVe.GiaVe
+    FROM tblThongTinVe 
+    INNER JOIN tblHoaDon ON tblHoaDon.MaHoaDon = tblThongTinVe.MaHoaDon
+    GROUP BY GiaVe
+
+    SELECT tblThongTinVe.MaHoaDon, tblThongTinVe.GiaVe
+    FROM tblThongTinVe
+    INNER JOIN tblHoaDon ON tblHoaDon.MaHoaDon = tblThongTinVe.MaHoaDon
+    GROUP BY tblThongTinVe.GiaVe
+
+    GO;
 -- Thủ tục
     --1. Thủ tục thêm số lượng toa của một chuyến tàu theo số lượng toa tàu của một mã tàu
 	CREATE PROC proc_ThemSoLuongToa(@MaChuyenTau VARCHAR(6))
