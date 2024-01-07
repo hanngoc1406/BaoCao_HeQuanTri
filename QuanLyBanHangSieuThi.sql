@@ -351,9 +351,9 @@ INNER JOIN SanPham ON ChiTietHoaDon.MaSanPham = SanPham.MaSanPham;
 
 GO
 
-/* Hàm */
+/* Hàm (5Ham)*/
 -- 1. Hàm để kiểm tra tổng số lượng tồn kho của một danh mục - Nguyễn Hoàng Lâm
-CREATE FUNCTION SoLuongTonKhoMoiDanhMuc(@MaDanhMuc CHAR(7))
+CREATE FUNCTION func_SoLuongTonKhoMoiDanhMuc(@MaDanhMuc CHAR(7))
     RETURNS TABLE
 AS
 RETURN
@@ -366,16 +366,16 @@ RETURN
 
 GO;
 
-SELECT * FROM SoLuongTonKhoMoiDanhMuc('10')
+SELECT * FROM func_SoLuongTonKhoMoiDanhMuc('10')
 
 GO;
 
-DROP FUNCTION SoLuongTonKhoMoiDanhMuc
+DROP FUNCTION func_SoLuongTonKhoMoiDanhMuc
 
 GO;
 
 -- 2. Hàm tính tổng số lượng đơn hàng của một khách hàng - Thái Cao Thiên Đạt
-CREATE FUNCTION SoLuongHoaDonMotKhachHang()
+CREATE FUNCTION func_SoLuongHoaDonMotKhachHang()
     RETURNS @SoLuongHoaDon TABLE (MaKhachHang CHAR(7), TenKhachHang NVARCHAR(50), TongSoLuongDonHang INT)
 AS
 BEGIN
@@ -390,18 +390,18 @@ END;
 
 GO
 
-SELECT * FROM SoLuongHoaDonMotKhachHang()
+SELECT * FROM func_SoLuongHoaDonMotKhachHang()
 
 GO
 
-DROP FUNCTION SoLuongHoaDonMotKhachHang
+DROP FUNCTION func_SoLuongHoaDonMotKhachHang
 
 GO
 
 -- 3. Hàm tính giá trị trung bình các đơn hàng của mỗi khách hàng - Nguyễn Quang Huy
 -- Công thức tính đơn giá: (SoLuong * DonGia) - (SoLuong * DonGia * GiamGia). 
 -- Rút gọn công thức (1 - GiamGia) * DonGia * SoLuong
-CREATE FUNCTION GiaTriTrungCacHoaDonMoiKhachHang()
+CREATE FUNCTION func_GiaTriTrungBinhCacHoaDonMoiKhachHang()
     RETURNS TABLE
 AS
 RETURN
@@ -409,33 +409,31 @@ RETURN
     SELECT KhachHang.MaKhachHang, KhachHang.TenKhachHang, AVG((1 - ChiTietHoaDon.GiamGia) * ChiTietHoaDon.SoLuong * ChiTietHoaDon.DonGia) AS TrungBinh
     FROM KhachHang
     INNER JOIN HoaDon ON HoaDon.MaKhachHang = KhachHang.MaKhachHang
-    INNER JOIN ChiTietHoaDon ON HoaDon.MaHoaDon = ChiTietHoaDon.MaHoaDon
+    INNER JOIN ChiTietHoaDon ON ChiTietHoaDon.MaHoaDon = HoaDon.MaHoaDon
     GROUP BY KhachHang.MaKhachHang, KhachHang.TenKhachHang
 );
 
 GO
 
-SELECT * FROM GiaTriTrungCacHoaDonMoiKhachHang()
+SELECT * FROM func_GiaTriTrungBinhCacHoaDonMoiKhachHang()
 
 GO
 
-DROP FUNCTION GiaTriTrungCacHoaDonMoiKhachHang
+DROP FUNCTION func_GiaTriTrungBinhCacHoaDonMoiKhachHang
 
 GO
 
 -- 4. Hàm kiểm tra xem đơn hàng có được giao đúng hạn hay không - Phan Anh Đức
-CREATE FUNCTION GiaoHangDungHan(@MaHoaDon CHAR(7))
+CREATE FUNCTION func_GiaoHangDungHan(@MaHoaDon CHAR(7))
     RETURNS INT
 AS
 BEGIN
     DECLARE @NgayGiao DATE;
     DECLARE @NgayYeuCauGiao DATE;
 
-    BEGIN
-        SELECT @NgayGiao = NgayGiao, @NgayYeuCauGiao = NgayYeuCauGiao
-        FROM Hoadon
-        WHERE MaHoaDon = @MaHoaDon;
-    END;
+    SELECT @NgayGiao = NgayGiao, @NgayYeuCauGiao = NgayYeuCauGiao
+    FROM Hoadon
+    WHERE MaHoaDon = @MaHoaDon;
     
     -- 0: Giao hang dung han, 1: Giao khong dung han, 3: Khong co ma hoa don
     IF @NgayGiao <= @NgayYeuCauGiao 
@@ -450,9 +448,9 @@ GO
 
 DECLARE @MaHoaDon NVARCHAR(10) = 'HD003';
 BEGIN
-    IF dbo.GiaoHangDungHan(@MaHoaDon) = 0
+    IF dbo.func_GiaoHangDungHan(@MaHoaDon) = 0
         PRINT 'Hoa don ' + @MaHoaDon + ' giao hang dung han.'
-    ELSE IF dbo.GiaoHangDungHan(@MaHoaDon) = 1
+    ELSE IF dbo.func_GiaoHangDungHan(@MaHoaDon) = 1
         PRINT 'Hoa don ' + @MaHoaDon + ' giao hang khong dung han.'
     ELSE 
         PRINT 'Hoa don ' + @MaHoaDon + ' khong ton tai.'
@@ -460,12 +458,12 @@ END;
 
 GO
 
-DROP FUNCTION GiaoHangDungHan;
+DROP FUNCTION func_GiaoHangDungHan;
 
 GO
 
 -- 5. Hàm xếp loại khách hàng dựa trên tổng chi tiêu - Phan Huy Nguyên
-CREATE FUNCTION XepLoaiKhachHang(@MaKhachHang VARCHAR(7))
+CREATE FUNCTION func_XepLoaiKhachHang(@MaKhachHang VARCHAR(7))
     RETURNS INT
 AS
 BEGIN
@@ -490,11 +488,11 @@ GO
 
 DECLARE @MaKhachHang CHAR(7) = 'KH001'
 BEGIN
-    IF dbo.XepLoaiKhachHang(@MaKhachHang) = 0
+    IF dbo.func_XepLoaiKhachHang(@MaKhachHang) = 0
         PRINT 'Khach hang VIP'
-    ELSE IF dbo.XepLoaiKhachHang(@MaKhachHang) = 1
+    ELSE IF dbo.func_XepLoaiKhachHang(@MaKhachHang) = 1
         PRINT 'Khach hang than thiet'
-    ELSE IF dbo.XepLoaiKhachHang(@MaKhachHang) = 2
+    ELSE IF dbo.func_XepLoaiKhachHang(@MaKhachHang) = 2
         PRINT 'Khach hang thuong'
     ELSE 
         PRINT 'Khach hang khong ton tai'
@@ -502,21 +500,157 @@ END;
 
 GO
 
-DROP FUNCTION XepLoaiKhachHang
+DROP FUNCTION func_XepLoaiKhachHang
 
-/* Con trỏ */
+GO
+
+/* Thủ tục (5thutuc) */
+-- 1. Thủ tục xem chi tiết các đơn hàng của một khách hàng - Thái Cao Thiên Đạt
+CREATE PROCEDURE proc_XemChiTietDonHang
+    @MaKhachHang CHAR(7)
+AS BEGIN
+    SELECT
+        HoaDon.MaHoaDon,
+        HoaDon.NgayDat,
+        HoaDon.NgayYeuCauGiao,
+        HoaDon.NgayGiao,
+        ChiTietHoaDon.SoLuong,
+        ChiTietHoaDon.DonGia,
+        ChiTietHoaDon.GiamGia,
+        SanPham.TenSanPham
+    FROM ChiTietHoaDon
+    INNER JOIN HoaDon ON HoaDon.MaHoaDon = ChiTietHoaDon.MaHoaDon
+    INNER JOIN SanPham ON SanPham.MaSanPham = ChiTietHoaDon.MaSanPham
+    WHERE HoaDon.MaKhachHang = @MaKhachHang;
+END;
+
+GO
+
+EXEC proc_XemChiTietDonHang 'KH001'
+
+GO
+
+DROP PROC proc_XemChiTietDonHang
+
+GO
+
+-- 2. Thủ tục tính tổng doanh thu theo ngày - Phan Huy Nguyên
+CREATE PROC proc_TinhTongDoanhThuTheoNgay
+    @Ngay DATE
+AS BEGIN
+    IF NOT EXISTS (SELECT MaHoaDon FROM HoaDon WHERE NgayGiao = @Ngay)
+        PRINT N'Không có dữ liệu!'
+    ELSE
+        DECLARE @TongDoanhThu MONEY
+
+        SELECT @TongDoanhThu = SUM((1 - ChiTietHoaDon.GiamGia) * ChiTietHoaDon.DonGia * ChiTietHoaDon.SoLuong) 
+        FROM ChiTietHoaDon
+        WHERE MaHoaDon IN (SELECT MaHoaDon FROM HoaDon WHERE NgayGiao = @Ngay)
+
+        PRINT N'Tổng doanh thu của ngày ' + CAST(@Ngay AS VARCHAR(30)) + N' là: ' + CAST(@TongDoanhThu AS VARCHAR)
+END;
+
+EXEC proc_TinhTongDoanhThuTheoNgay @Ngay = '2021-10-21'
+
+GO;
+
+DROP PROC proc_TinhTongDoanhThuTheoNgay
+
+GO;
+
+-- 3. Thủ tục xác nhận ngày giao hàng - Nguyễn Quang Huy
+CREATE PROCEDURE proc_XacNhanNgayGiaoHang
+    @MaHoaDon VARCHAR(7),
+    @NgayGiao DATE
+AS
+BEGIN
+    IF NOT EXISTS (SELECT MaHoaDon FROM HoaDon WHERE MaHoaDon = @MaHoaDon)
+        PRINT N'Không có dữ liệu!'
+    ELSE
+        UPDATE HoaDon
+        SET NgayGiao = @NgayGiao
+        WHERE MaHoaDon = @MaHoaDon;
+
+        PRINT 'Da cap nhat du lieu!'
+END;
+
+GO
+
+EXEC proc_XacNhanNgayGiaoHang 'HD002', '2023-01-10';
+
+GO
+
+DROP PROC proc_XacNhanNgayGiaoHang
+
+GO
+
+-- 4. Thủ tục tình tổng doanh thu theo từng nhân viên - Phan Anh Đức
+CREATE PROCEDURE proc_DoanhThuTheoTungNhanVien
+    @MaNhanVien VARCHAR(7)
+AS
+BEGIN
+    IF NOT EXISTS (SELECT MaNhanVien FROM NhanVien WHERE MaNhanVien = @MaNhanVien)
+        PRINT 'Khong co du lieu!'
+    ELSE
+        DECLARE @TongDoanhThu MONEY;
+
+        SELECT @TongDoanhThu = SUM((1 - ChiTietHoaDon.GiamGia) * SanPham.DonGia * ChiTietHoaDon.SoLuong)
+        FROM ChiTietHoaDon
+        INNER JOIN SanPham ON SanPham.MaSanPham = ChiTietHoaDon.MaSanPham
+        INNER JOIN HoaDon ON HoaDon.MaHoaDon = ChiTietHoaDon.MaHoaDon
+        WHERE HoaDon.MaNhanVien = @MaNhanVien;
+
+        PRINT 'Tong doanh thu do Nhan Vien ' + @MaNhanVien + ': ' + CAST(@TongDoanhThu AS VARCHAR(50));
+END;
+
+GO
+
+EXEC proc_DoanhThuTheoTungNhanVien 'NV003'; 
+
+GO
+
+DROP PROC proc_DoanhThuTheoTungNhanVien;
+
+GO
+
+-- 5. Thủ tục lấy thông tin shipper giao hàng theo thành phố - Nguyễn Hoàng Lâm
+CREATE PROCEDURE proc_ThongTinShipperOHanoi
+    @ThanhPho NVARCHAR(20)
+AS
+BEGIN
+    SELECT
+        HoaDon.MaHoaDon,
+        KhachHang.TenKhachHang,
+        KhachHang.SoDienThoai AS SoDienThoaiKhachHang,
+        GiaoHang.TenNguoiGiaoHang,
+        GiaoHang.SoDienThoai AS SoDienThoaiShipper
+    FROM HoaDon
+    INNER JOIN KhachHang ON KhachHang.MaKhachHang = HoaDon.MaKhachHang
+    INNER JOIN GiaoHang ON GiaoHang.MaNguoiGiaoHang = HoaDon.MaNguoiGiaoHang
+    WHERE HoaDon.ThanhPho = @ThanhPho;
+END;
+
+GO
+
+EXEC proc_ThongTinShipperOHanoi 'Ho Chi Minh'
+
+GO
+
+DROP PROC proc_ThongTinShipperOHanoi
+
+/* Con trỏ (5contro) */
 -- 1. Con trỏ in ra tên sản phẩm và số lượng tồn kho - Nguyễn Hoàng Lâm
-DECLARE SoLuongTonKho_cur CURSOR 
+DECLARE cur_SoLuongTonKho CURSOR 
 FOR
     SELECT MaSanPham, TenSanPham, SoLuongTonKho FROM SanPham;
 
-OPEN SoLuongTonKho_cur;
+OPEN cur_SoLuongTonKho;
 
 DECLARE @MaSanPham CHAR(7);
 DECLARE @TenSanPham VARCHAR(50);
 DECLARE @SoLuongTonKho INT;
 
-FETCH NEXT FROM SoLuongTonKho_cur INTO @MaSanPham, @TenSanPham, @SoLuongTonKho;
+FETCH NEXT FROM cur_SoLuongTonKho INTO @MaSanPham, @TenSanPham, @SoLuongTonKho;
 
 WHILE(@@FETCH_STATUS = 0)
 BEGIN
@@ -526,29 +660,29 @@ BEGIN
     PRINT N'Số lượng tồn kho: ' + CAST(@SoLuongTonKho AS NVARCHAR(20));
     PRINT N'----------------------------------';
 
-    FETCH NEXT FROM SoLuongTonKho_cur INTO @MaSanPham, @TenSanPham, @SoLuongTonKho;
+    FETCH NEXT FROM cur_SoLuongTonKho INTO @MaSanPham, @TenSanPham, @SoLuongTonKho;
 END
 
-CLOSE SoLuongTonKho_cur;
-DEALLOCATE SoLuongTonKho_cur;
+CLOSE cur_SoLuongTonKho;
+DEALLOCATE cur_SoLuongTonKho;
 
 GO
 
 -- 2. Duyệt qua danh sách khách hàng và tính tổng số hóa đơn của mỗi khách hàng - Thái Cao Thiên Đạt
-DECLARE TongSoHoaDon_cur CURSOR 
+DECLARE cur_TongSoHoaDon CURSOR 
 FOR
     SELECT KhachHang.MaKhachHang, KhachHang.TenKhachHang, COUNT(HoaDon.MaHoaDon) AS TongSoLuongDonHang
     FROM KhachHang
     INNER JOIN HoaDon ON HoaDon.MaKhachHang = KhachHang.MaKhachHang
     GROUP BY KhachHang.TenKhachHang, KhachHang.MaKhachHang
 
-OPEN TongSoHoaDon_cur;
+OPEN cur_TongSoHoaDon;
 
 DECLARE @MaKhachHang CHAR(7);
 DECLARE @TenKhachHang VARCHAR(50);
 DECLARE @SoLuongHoaDon INT;
 
-FETCH NEXT FROM TongSoHoaDon_cur INTO @MaKhachHang, @TenKhachHang, @SoLuongHoaDon; 
+FETCH NEXT FROM cur_TongSoHoaDon INTO @MaKhachHang, @TenKhachHang, @SoLuongHoaDon; 
 
 WHILE(@@FETCH_STATUS = 0)
 BEGIN
@@ -561,25 +695,25 @@ BEGIN
     FETCH NEXT FROM TongSoHoaDon_cur INTO @MaKhachHang, @TenKhachHang, @SoLuongHoaDon;
 END;
 
-CLOSE TongSoHoaDon_cur;
-DEALLOCATE TongSoHoaDon_cur;
+CLOSE cur_TongSoHoaDon;
+DEALLOCATE cur_TongSoHoaDon;
 
 GO
 
 -- 3. Con trỏ in ra danh sách nhà cung cấp - Phan Huy Nguyên
-DECLARE DanhSachNhaCungCap_cur CURSOR 
+DECLARE cur_DanhSachNhaCungCap CURSOR 
 FOR
     SELECT MaNhaCungCap, TenCongTy, TenNguoiDaiDien, SoDienThoai
     FROM NhaCungCap;
 
-OPEN DanhSachNhaCungCap_cur;
+OPEN cur_DanhSachNhaCungCap;
 
 DECLARE @MaNhaCungCap CHAR(7);
 DECLARE @TenCongTy VARCHAR(20);
 DECLARE @TenNguoiDaiDien VARCHAR(50);
 DECLARE @SoDienThoai VARCHAR(10);
 
-FETCH NEXT FROM DanhSachNhaCungCap_cur INTO @MaNhaCungCap, @TenCongTy, @TenNguoiDaiDien, @SoDienThoai;
+FETCH NEXT FROM cur_DanhSachNhaCungCap INTO @MaNhaCungCap, @TenCongTy, @TenNguoiDaiDien, @SoDienThoai;
 
 WHILE(@@FETCH_STATUS = 0)
 BEGIN
@@ -593,18 +727,18 @@ BEGIN
     FETCH NEXT FROM DanhSachNhaCungCap_cur INTO @MaNhaCungCap, @TenCongTy, @TenNguoiDaiDien, @SoDienThoai;
 END;
 
-CLOSE DanhSachNhaCungCap_cur;
-DEALLOCATE DanhSachNhaCungCap_cur;
+CLOSE cur_DanhSachNhaCungCap;
+DEALLOCATE cur_DanhSachNhaCungCap;
 
 GO
 
 -- 4. Con trỏ in ra danh sách khách hàng - Nguyễn Quang Huy
-DECLARE DanhSachKhachHang_cur CURSOR 
+DECLARE cur_DanhSachKhachHang CURSOR 
 FOR
     SELECT MaKhachHang, TenKhachHang, NgaySinh, SoDienThoai, DiaChi, ThanhPho
     FROM KhachHang;
 
-OPEN DanhSachKhachHang_cur;
+OPEN cur_DanhSachKhachHang;
 
 DECLARE @MaKhachHang CHAR(7);
 DECLARE @TenKhachHang VARCHAR(50);
@@ -613,7 +747,7 @@ DECLARE @SoDienThoai VARCHAR(10);
 DECLARE @DiaChi VARCHAR(30);
 DECLARE @ThanhPho VARCHAR(20);
 
-FETCH NEXT FROM DanhSachKhachHang_cur INTO @MaKhachHang, @TenKhachHang, @NgaySinh, @SoDienThoai, @DiaChi, @ThanhPho;
+FETCH NEXT FROM cur_DanhSachKhachHang INTO @MaKhachHang, @TenKhachHang, @NgaySinh, @SoDienThoai, @DiaChi, @ThanhPho;
 
 WHILE(@@FETCH_STATUS = 0)
 BEGIN
@@ -626,28 +760,28 @@ BEGIN
     PRINT N'Thành phố: ' + @ThanhPho;
     PRINT N'----------------------------------';
 
-    FETCH NEXT FROM DanhSachKhachHang_cur INTO @MaKhachHang, @TenKhachHang, @NgaySinh, @SoDienThoai, @DiaChi, @ThanhPho;
+    FETCH NEXT FROM cur_DanhSachKhachHang INTO @MaKhachHang, @TenKhachHang, @NgaySinh, @SoDienThoai, @DiaChi, @ThanhPho;
 END;
 
-CLOSE DanhSachKhachHang_cur;
-DEALLOCATE DanhSachKhachHang_cur;
+CLOSE cur_DanhSachKhachHang;
+DEALLOCATE cur_DanhSachKhachHang;
 
 GO
 
--- 5. Con trỏ in ra danh sách sản phẩm có số lượng tồn kho dưới 10 - Phan Anh Đức
-DECLARE TonKhoDuoiMuc_cursor CURSOR 
+-- 5. Con trỏ in ra danh sách sản phẩm có số lượng tồn kho dưới 15 - Phan Anh Đức
+DECLARE cur_TonKhoDuoiMuc CURSOR 
 FOR
     SELECT MaSanPham, TenSanPham, SoLuongTonKho 
     FROM SanPham
-    WHERE SoLuongTonKho < 10;
+    WHERE SoLuongTonKho < 15;
 
-OPEN TonKhoDuoiMuc_cursor;
+OPEN cur_TonKhoDuoiMuc;
 
 DECLARE @MaSanPham CHAR(7);
 DECLARE @TenSanPham VARCHAR(50);
 DECLARE @SoLuongTonKho INT;
 
-FETCH NEXT FROM TonKhoDuoiMuc_cursor INTO @MaSanPham, @TenSanPham, @SoLuongTonKho;
+FETCH NEXT FROM cur_TonKhoDuoiMuc INTO @MaSanPham, @TenSanPham, @SoLuongTonKho;
 
 WHILE(@@FETCH_STATUS = 0)
 BEGIN
@@ -657,8 +791,8 @@ BEGIN
     PRINT N'Số lượng tồn kho: ' + CAST(@SoLuongTonKho AS NVARCHAR(20));
     PRINT N'----------------------------------';
 
-    FETCH NEXT FROM TonKhoDuoiMuc_cursor INTO @MaSanPham, @TenSanPham, @SoLuongTonKho;
+    FETCH NEXT FROM cur_TonKhoDuoiMuc INTO @MaSanPham, @TenSanPham, @SoLuongTonKho;
 END
 
-CLOSE TonKhoDuoiMuc_cursor;
-DEALLOCATE TonKhoDuoiMuc_cursor;
+CLOSE cur_TonKhoDuoiMuc;
+DEALLOCATE cur_TonKhoDuoiMuc;
