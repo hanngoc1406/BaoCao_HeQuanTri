@@ -345,13 +345,13 @@ GO;
 
 /* Truy vấn bình thường */
 
-SELECT  FROM ChiTietHoaDon
+SELECT * FROM ChiTietHoaDon
 INNER JOIN HoaDon ON ChiTietHoaDon.MaHoaDon = HoaDon.MaHoaDon
 INNER JOIN SanPham ON ChiTietHoaDon.MaSanPham = SanPham.MaSanPham;
 
 GO
 
-/* Ham */
+/* Hàm */
 -- 1. Hàm để kiểm tra tổng số lượng tồn kho của một danh mục - Nguyễn Hoàng Lâm
 CREATE FUNCTION SoLuongTonKhoMoiDanhMuc(@MaDanhMuc CHAR(7))
     RETURNS TABLE
@@ -505,46 +505,160 @@ GO
 DROP FUNCTION XepLoaiKhachHang
 
 /* Con trỏ */
+-- 1. Con trỏ in ra tên sản phẩm và số lượng tồn kho - Nguyễn Hoàng Lâm
+DECLARE SoLuongTonKho_cur CURSOR 
+FOR
+    SELECT MaSanPham, TenSanPham, SoLuongTonKho FROM SanPham;
+
+OPEN SoLuongTonKho_cur;
+
 DECLARE @MaSanPham CHAR(7);
 DECLARE @TenSanPham VARCHAR(50);
 DECLARE @SoLuongTonKho INT;
 
-DECLARE product_cursor CURSOR FOR
-SELECT MaSanPham, TenSanPham, SoLuongTonKho FROM SanPham;
+FETCH NEXT FROM SoLuongTonKho_cur INTO @MaSanPham, @TenSanPham, @SoLuongTonKho;
 
-OPEN product_cursor;
-FETCH NEXT FROM product_cursor INTO @MaSanPham, @TenSanPham, @SoLuongTonKho;
-
-WHILE @@FETCH_STATUS = 0
+WHILE(@@FETCH_STATUS = 0)
 BEGIN
-    PRINT @MaSanPham + ', Name: ' + @TenSanPham + ', Current Stock: ' + CAST(@SoLuongTonKho AS VARCHAR);
-    FETCH NEXT FROM product_cursor INTO @MaSanPham, @TenSanPham, @SoLuongTonKho;
+    PRINT N'----------------------------------';
+    PRINT N'Mã sản phẩm: ' + @MaSanPham;
+    PRINT N'Tên sản phẩm: ' + @TenSanPham;
+    PRINT N'Số lượng tồn kho: ' + CAST(@SoLuongTonKho AS NVARCHAR(20));
+    PRINT N'----------------------------------';
+
+    FETCH NEXT FROM SoLuongTonKho_cur INTO @MaSanPham, @TenSanPham, @SoLuongTonKho;
 END
 
-CLOSE product_cursor;
-DEALLOCATE product_cursor;
+CLOSE SoLuongTonKho_cur;
+DEALLOCATE SoLuongTonKho_cur;
 
 GO
 
--- Duyệt qua danh sách khách hàng và tính tổng số hóa đơn của mỗi khách hàng - Thái Cao Thiên Đạt
-DECLARE @MaKhachHang CHAR(7);
-DECLARE @TenKhachHang VARCHAR(50);
-DECLARE @SoLuongHoaDon INT;
-
-DECLARE customer_cursor CURSOR 
+-- 2. Duyệt qua danh sách khách hàng và tính tổng số hóa đơn của mỗi khách hàng - Thái Cao Thiên Đạt
+DECLARE TongSoHoaDon_cur CURSOR 
 FOR
     SELECT KhachHang.MaKhachHang, KhachHang.TenKhachHang, COUNT(HoaDon.MaHoaDon) AS TongSoLuongDonHang
     FROM KhachHang
     INNER JOIN HoaDon ON HoaDon.MaKhachHang = KhachHang.MaKhachHang
     GROUP BY KhachHang.TenKhachHang, KhachHang.MaKhachHang
 
-OPEN customer_cursor;
-FETCH NEXT FROM customer_cursor INTO @MaKhachHang, @TenKhachHang, @SoLuongHoaDon; 
+OPEN TongSoHoaDon_cur;
 
-WHILE @@FETCH_STATUS = 0
+DECLARE @MaKhachHang CHAR(7);
+DECLARE @TenKhachHang VARCHAR(50);
+DECLARE @SoLuongHoaDon INT;
+
+FETCH NEXT FROM TongSoHoaDon_cur INTO @MaKhachHang, @TenKhachHang, @SoLuongHoaDon; 
+
+WHILE(@@FETCH_STATUS = 0)
 BEGIN
-    PRINT @MaKhachHang + ' - ' + @TenKhachHang + ': ' + CAST(@SoLuongHoaDon AS NVARCHAR(50))
-    FETCH NEXT FROM customer_cursor INTO @MaKhachHang, @TenKhachHang, @SoLuongHoaDon;
+    PRINT N'----------------------------------';
+    PRINT N'Mã khách hàng: ' + @MaKhachHang;
+    PRINT N'Tên khách hàng: ' + @TenKhachHang;
+    PRINT N'Số lượng hóa đơn: ' + CAST(@SoLuongHoaDon AS NVARCHAR(20));
+    PRINT N'----------------------------------';
+
+    FETCH NEXT FROM TongSoHoaDon_cur INTO @MaKhachHang, @TenKhachHang, @SoLuongHoaDon;
+END;
+
+CLOSE TongSoHoaDon_cur;
+DEALLOCATE TongSoHoaDon_cur;
+
+GO
+
+-- 3. Con trỏ in ra danh sách nhà cung cấp - Phan Huy Nguyên
+DECLARE DanhSachNhaCungCap_cur CURSOR 
+FOR
+    SELECT MaNhaCungCap, TenCongTy, TenNguoiDaiDien, SoDienThoai
+    FROM NhaCungCap;
+
+OPEN DanhSachNhaCungCap_cur;
+
+DECLARE @MaNhaCungCap CHAR(7);
+DECLARE @TenCongTy VARCHAR(20);
+DECLARE @TenNguoiDaiDien VARCHAR(50);
+DECLARE @SoDienThoai VARCHAR(10);
+
+FETCH NEXT FROM DanhSachNhaCungCap_cur INTO @MaNhaCungCap, @TenCongTy, @TenNguoiDaiDien, @SoDienThoai;
+
+WHILE(@@FETCH_STATUS = 0)
+BEGIN
+    PRINT N'----------------------------------';
+    PRINT N'Mã nhà cung cấp: ' + @MaNhaCungCap;
+    PRINT N'Tên công ty: ' + @TenCongTy;
+    PRINT N'Tên người đại diện: ' + @TenNguoiDaiDien;
+    PRINT N'Số điện thoại: ' + @SoDienThoai;
+    PRINT N'----------------------------------';
+    
+    FETCH NEXT FROM DanhSachNhaCungCap_cur INTO @MaNhaCungCap, @TenCongTy, @TenNguoiDaiDien, @SoDienThoai;
+END;
+
+CLOSE DanhSachNhaCungCap_cur;
+DEALLOCATE DanhSachNhaCungCap_cur;
+
+GO
+
+-- 4. Con trỏ in ra danh sách khách hàng - Nguyễn Quang Huy
+DECLARE DanhSachKhachHang_cur CURSOR 
+FOR
+    SELECT MaKhachHang, TenKhachHang, NgaySinh, SoDienThoai, DiaChi, ThanhPho
+    FROM KhachHang;
+
+OPEN DanhSachKhachHang_cur;
+
+DECLARE @MaKhachHang CHAR(7);
+DECLARE @TenKhachHang VARCHAR(50);
+DECLARE @NgaySinh DATE;
+DECLARE @SoDienThoai VARCHAR(10);
+DECLARE @DiaChi VARCHAR(30);
+DECLARE @ThanhPho VARCHAR(20);
+
+FETCH NEXT FROM DanhSachKhachHang_cur INTO @MaKhachHang, @TenKhachHang, @NgaySinh, @SoDienThoai, @DiaChi, @ThanhPho;
+
+WHILE(@@FETCH_STATUS = 0)
+BEGIN
+    PRINT N'----------------------------------';
+    PRINT N'Mã khách hàng: ' + @MaKhachHang;
+    PRINT N'Tên khách hàng: ' + @TenKhachHang;
+    PRINT N'Ngày sinh: ' + CONVERT(nvarchar(20), @NgaySinh);
+    PRINT N'Số điện thoại: ' + @SoDienThoai;
+    PRINT N'Địa chỉ: ' + @DiaChi;
+    PRINT N'Thành phố: ' + @ThanhPho;
+    PRINT N'----------------------------------';
+
+    FETCH NEXT FROM DanhSachKhachHang_cur INTO @MaKhachHang, @TenKhachHang, @NgaySinh, @SoDienThoai, @DiaChi, @ThanhPho;
+END;
+
+CLOSE DanhSachKhachHang_cur;
+DEALLOCATE DanhSachKhachHang_cur;
+
+GO
+
+-- 5. Con trỏ in ra danh sách sản phẩm có số lượng tồn kho dưới 10 - Phan Anh Đức
+DECLARE TonKhoDuoiMuc_cursor CURSOR 
+FOR
+    SELECT MaSanPham, TenSanPham, SoLuongTonKho 
+    FROM SanPham
+    WHERE SoLuongTonKho < 10;
+
+OPEN TonKhoDuoiMuc_cursor;
+
+DECLARE @MaSanPham CHAR(7);
+DECLARE @TenSanPham VARCHAR(50);
+DECLARE @SoLuongTonKho INT;
+
+FETCH NEXT FROM TonKhoDuoiMuc_cursor INTO @MaSanPham, @TenSanPham, @SoLuongTonKho;
+
+WHILE(@@FETCH_STATUS = 0)
+BEGIN
+    PRINT N'----------------------------------';
+    PRINT N'Mã sản phẩm: ' + @MaSanPham;
+    PRINT N'Tên sản phẩm: ' + @TenSanPham;
+    PRINT N'Số lượng tồn kho: ' + CAST(@SoLuongTonKho AS NVARCHAR(20));
+    PRINT N'----------------------------------';
+
+    FETCH NEXT FROM TonKhoDuoiMuc_cursor INTO @MaSanPham, @TenSanPham, @SoLuongTonKho;
 END
-CLOSE customer_cursor;
-DEALLOCATE customer_cursor;
+
+CLOSE TonKhoDuoiMuc_cursor;
+DEALLOCATE TonKhoDuoiMuc_cursor;
