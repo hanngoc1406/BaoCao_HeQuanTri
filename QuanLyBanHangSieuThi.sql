@@ -27,8 +27,8 @@ CREATE TABLE NhaCungCap (
 
 CREATE TABLE DanhMucSanPham (
     MaDanhMuc CHAR(7) PRIMARY KEY,
-    TenDanhMuc VARCHAR(20),
-    Mota VARCHAR(80)
+    TenDanhMuc NVARCHAR(50),
+    Mota NVARCHAR(225)
 );
 
 CREATE TABLE SanPham (
@@ -81,7 +81,7 @@ CREATE TABLE ChiTietHoaDon (
     MaChiTietHoaDon CHAR(7) NOT NULL PRIMARY KEY,
     MaHoaDon CHAR(7),
     MaSanPham CHAR(7),
-    DonGia DECIMAL(10, 0),
+    DonGia MONEY,
     SoLuong INT,
     GiamGia DECIMAL(5, 2),
     FOREIGN KEY (MaHoaDon) REFERENCES HoaDon(MaHoaDon),
@@ -341,4 +341,210 @@ VALUES
 ('CT084', 'HD020', 'SP37', 60000, 1, 0.20),
 ('CT085', 'HD020', 'SP42', 320000, 1, 0.20);
 
+GO;
 
+/* Truy vấn bình thường */
+
+SELECT  FROM ChiTietHoaDon
+INNER JOIN HoaDon ON ChiTietHoaDon.MaHoaDon = HoaDon.MaHoaDon
+INNER JOIN SanPham ON ChiTietHoaDon.MaSanPham = SanPham.MaSanPham;
+
+GO
+
+/* Ham */
+-- 1. Hàm để kiểm tra tổng số lượng tồn kho của một danh mục - Nguyễn Hoàng Lâm
+CREATE FUNCTION SoLuongTonKhoMoiDanhMuc(@MaDanhMuc CHAR(7))
+    RETURNS TABLE
+AS
+RETURN
+(
+    SELECT SUM(SanPham.SoLuongTonKho) AS SoLuong
+    FROM DanhMucSanPham
+    INNER JOIN SanPham ON DanhMucSanPham.MaDanhMuc = SanPham.MaDanhMuc
+    WHERE DanhMucSanPham.MaDanhMuc = @MaDanhMuc
+);
+
+GO;
+
+SELECT * FROM SoLuongTonKhoMoiDanhMuc('10')
+
+GO;
+
+DROP FUNCTION SoLuongTonKhoMoiDanhMuc
+
+GO;
+
+-- 2. Hàm tính tổng số lượng đơn hàng của một khách hàng - Thái Cao Thiên Đạt
+CREATE FUNCTION SoLuongHoaDonMotKhachHang()
+    RETURNS @SoLuongHoaDon TABLE (MaKhachHang CHAR(7), TenKhachHang NVARCHAR(50), TongSoLuongDonHang INT)
+AS
+BEGIN
+    INSERT INTO @SoLuongHoaDon
+    SELECT KhachHang.MaKhachHang, KhachHang.TenKhachHang, COUNT(HoaDon.MaHoaDon) AS TongSoLuongDonHang
+    FROM KhachHang
+    INNER JOIN HoaDon ON HoaDon.MaKhachHang = KhachHang.MaKhachHang
+    GROUP BY KhachHang.TenKhachHang, KhachHang.MaKhachHang
+
+	RETURN
+END;
+
+GO
+
+SELECT * FROM SoLuongHoaDonMotKhachHang()
+
+GO
+
+DROP FUNCTION SoLuongHoaDonMotKhachHang
+
+GO
+
+-- 3. Hàm tính giá trị trung bình các đơn hàng của mỗi khách hàng - Nguyễn Quang Huy
+-- Công thức tính đơn giá: (SoLuong * DonGia) - (SoLuong * DonGia * GiamGia). 
+-- Rút gọn công thức (1 - GiamGia) * DonGia * SoLuong
+CREATE FUNCTION GiaTriTrungCacHoaDonMoiKhachHang()
+    RETURNS TABLE
+AS
+RETURN
+(
+    SELECT KhachHang.MaKhachHang, KhachHang.TenKhachHang, AVG((1 - ChiTietHoaDon.GiamGia) * ChiTietHoaDon.SoLuong * ChiTietHoaDon.DonGia) AS TrungBinh
+    FROM KhachHang
+    INNER JOIN HoaDon ON HoaDon.MaKhachHang = KhachHang.MaKhachHang
+    INNER JOIN ChiTietHoaDon ON HoaDon.MaHoaDon = ChiTietHoaDon.MaHoaDon
+    GROUP BY KhachHang.MaKhachHang, KhachHang.TenKhachHang
+);
+
+GO
+
+SELECT * FROM GiaTriTrungCacHoaDonMoiKhachHang()
+
+GO
+
+DROP FUNCTION GiaTriTrungCacHoaDonMoiKhachHang
+
+GO
+
+-- 4. Hàm kiểm tra xem đơn hàng có được giao đúng hạn hay không - Phan Anh Đức
+CREATE FUNCTION GiaoHangDungHan(@MaHoaDon CHAR(7))
+    RETURNS INT
+AS
+BEGIN
+    DECLARE @NgayGiao DATE;
+    DECLARE @NgayYeuCauGiao DATE;
+
+    BEGIN
+        SELECT @NgayGiao = NgayGiao, @NgayYeuCauGiao = NgayYeuCauGiao
+        FROM Hoadon
+        WHERE MaHoaDon = @MaHoaDon;
+    END;
+    
+    -- 0: Giao hang dung han, 1: Giao khong dung han, 3: Khong co ma hoa don
+    IF @NgayGiao <= @NgayYeuCauGiao 
+        RETURN 0
+    ELSE IF @NgayGiao > @NgayYeuCauGiao 
+        RETURN 1
+        
+    RETURN 3
+END;
+
+GO
+
+DECLARE @MaHoaDon NVARCHAR(10) = 'HD003';
+BEGIN
+    IF dbo.GiaoHangDungHan(@MaHoaDon) = 0
+        PRINT 'Hoa don ' + @MaHoaDon + ' giao hang dung han.'
+    ELSE IF dbo.GiaoHangDungHan(@MaHoaDon) = 1
+        PRINT 'Hoa don ' + @MaHoaDon + ' giao hang khong dung han.'
+    ELSE 
+        PRINT 'Hoa don ' + @MaHoaDon + ' khong ton tai.'
+END;
+
+GO
+
+DROP FUNCTION GiaoHangDungHan;
+
+GO
+
+-- 5. Hàm xếp loại khách hàng dựa trên tổng chi tiêu - Phan Huy Nguyên
+CREATE FUNCTION XepLoaiKhachHang(@MaKhachHang VARCHAR(7))
+    RETURNS INT
+AS
+BEGIN
+    DECLARE @TongChiTieu DECIMAL(18, 2)
+    SELECT @TongChiTieu = SUM((1 - ChiTietHoaDon.GiamGia) * ChiTietHoaDon.DonGia * ChiTietHoaDon.SoLuong)
+    FROM HoaDon
+    INNER JOIN ChiTietHoaDon ON HoaDon.MaHoaDon = ChiTietHoaDon.MaHoaDon
+    WHERE HoaDon.MaKhachHang = @MaKhachHang
+
+    -- 0: Khách hàng vip, 1: Khách hàng thân thiết, 2: Khách hàng thường, 4: Khong ton tai
+    IF @TongChiTieu >= 1000000
+        RETURN 0
+    ELSE IF @TongChiTieu >= 500000
+        RETURN 1
+    ELSE
+        RETURN 2
+
+    RETURN 4
+END;
+
+GO
+
+DECLARE @MaKhachHang CHAR(7) = 'KH001'
+BEGIN
+    IF dbo.XepLoaiKhachHang(@MaKhachHang) = 0
+        PRINT 'Khach hang VIP'
+    ELSE IF dbo.XepLoaiKhachHang(@MaKhachHang) = 1
+        PRINT 'Khach hang than thiet'
+    ELSE IF dbo.XepLoaiKhachHang(@MaKhachHang) = 2
+        PRINT 'Khach hang thuong'
+    ELSE 
+        PRINT 'Khach hang khong ton tai'
+END;
+
+GO
+
+DROP FUNCTION XepLoaiKhachHang
+
+/* Con trỏ */
+DECLARE @MaSanPham CHAR(7);
+DECLARE @TenSanPham VARCHAR(50);
+DECLARE @SoLuongTonKho INT;
+
+DECLARE product_cursor CURSOR FOR
+SELECT MaSanPham, TenSanPham, SoLuongTonKho FROM SanPham;
+
+OPEN product_cursor;
+FETCH NEXT FROM product_cursor INTO @MaSanPham, @TenSanPham, @SoLuongTonKho;
+
+WHILE @@FETCH_STATUS = 0
+BEGIN
+    PRINT @MaSanPham + ', Name: ' + @TenSanPham + ', Current Stock: ' + CAST(@SoLuongTonKho AS VARCHAR);
+    FETCH NEXT FROM product_cursor INTO @MaSanPham, @TenSanPham, @SoLuongTonKho;
+END
+
+CLOSE product_cursor;
+DEALLOCATE product_cursor;
+
+GO
+
+-- Duyệt qua danh sách khách hàng và tính tổng số hóa đơn của mỗi khách hàng - Thái Cao Thiên Đạt
+DECLARE @MaKhachHang CHAR(7);
+DECLARE @TenKhachHang VARCHAR(50);
+DECLARE @SoLuongHoaDon INT;
+
+DECLARE customer_cursor CURSOR 
+FOR
+    SELECT KhachHang.MaKhachHang, KhachHang.TenKhachHang, COUNT(HoaDon.MaHoaDon) AS TongSoLuongDonHang
+    FROM KhachHang
+    INNER JOIN HoaDon ON HoaDon.MaKhachHang = KhachHang.MaKhachHang
+    GROUP BY KhachHang.TenKhachHang, KhachHang.MaKhachHang
+
+OPEN customer_cursor;
+FETCH NEXT FROM customer_cursor INTO @MaKhachHang, @TenKhachHang, @SoLuongHoaDon; 
+
+WHILE @@FETCH_STATUS = 0
+BEGIN
+    PRINT @MaKhachHang + ' - ' + @TenKhachHang + ': ' + CAST(@SoLuongHoaDon AS NVARCHAR(50))
+    FETCH NEXT FROM customer_cursor INTO @MaKhachHang, @TenKhachHang, @SoLuongHoaDon;
+END
+CLOSE customer_cursor;
+DEALLOCATE customer_cursor;
