@@ -343,6 +343,10 @@ VALUES
 
 GO;
 
+SELECT * FROM SanPham
+SELECT * FROM HoaDon
+SELECT * FROM ChiTietHoaDon
+
 /* Truy vấn bình thường */
 
 SELECT * FROM ChiTietHoaDon
@@ -594,7 +598,7 @@ BEGIN
     ELSE
         DECLARE @TongDoanhThu MONEY;
 
-        SELECT @TongDoanhThu = SUM((1 - ChiTietHoaDon.GiamGia) * SanPham.DonGia * ChiTietHoaDon.SoLuong)
+        SELECT @TongDoanhThu = SUM((1 - ChiTietHoaDon.GiamGia) * ChiTietHoaDon.DonGia * ChiTietHoaDon.SoLuong)
         FROM ChiTietHoaDon
         INNER JOIN SanPham ON SanPham.MaSanPham = ChiTietHoaDon.MaSanPham
         INNER JOIN HoaDon ON HoaDon.MaHoaDon = ChiTietHoaDon.MaHoaDon
@@ -610,6 +614,14 @@ EXEC proc_DoanhThuTheoTungNhanVien 'NV003';
 GO
 
 DROP PROC proc_DoanhThuTheoTungNhanVien;
+
+GO
+
+SELECT ChiTietHoaDon.DonGia, ChiTietHoaDon.SoLuong, ChiTietHoaDon.GiamGia
+FROM ChiTietHoaDon
+INNER JOIN SanPham ON SanPham.MaSanPham = ChiTietHoaDon.MaSanPham
+INNER JOIN HoaDon ON HoaDon.MaHoaDon = ChiTietHoaDon.MaHoaDon
+WHERE HoaDon.MaNhanVien = 'NV003';
 
 GO
 
@@ -796,3 +808,96 @@ END
 
 CLOSE cur_TonKhoDuoiMuc;
 DEALLOCATE cur_TonKhoDuoiMuc;
+
+GO;
+
+/* View (5view) */
+-- 1. Hiển thị thông tin sản phẩm, số lượng, danh mục và nhà cung cấp tương ứng - Nguyễn Hoàng Lâm
+CREATE VIEW view_ThongTinSanPham
+AS
+	SELECT MaSanPham, TenSanPham, DanhMucSanPham.TenDanhMuc, SoLuongTonKho, SoluongDaBan, NhaCungCap.TenCongTy
+	FROM SanPham
+	INNER JOIN DanhMucSanPham ON DanhMucSanPham.MaDanhMuc = SanPham.MaDanhMuc
+	INNER JOIN NhaCungCap ON NhaCungCap.MaNhaCungCap = SanPham.MaNhaCungCap;
+
+GO
+
+SELECT * FROM view_ThongTinSanPham
+
+GO
+
+DROP VIEW view_ThongTinSanPham
+
+GO
+
+-- 2. View thống kê tổng tiền của mỗi hóa đơn - Thái Cao Thiên Đạt
+CREATE VIEW view_TongTienHoaDon 
+AS
+    SELECT HoaDon.MaHoaDon, SUM((1 - ChiTietHoaDon.GiamGia) * ChiTietHoaDon.SoLuong * ChiTietHoaDon.DonGia) AS TongTien
+    FROM HoaDon
+    INNER JOIN ChiTietHoaDon ON ChiTietHoaDon.MaHoaDon = HoaDon.MaHoaDon
+    GROUP BY HoaDon.MaHoaDon;
+
+GO
+
+SELECT * FROM view_TongTienHoaDon
+
+GO;
+
+DROP VIEW view_TongTienHoaDon
+
+GO
+
+-- 3. View chứa danh sách số lượng đơn hàng của từng khách hàng - Nguyễn Quang Huy
+CREATE VIEW view_SoLuongDonHangTheoTenKhachHang 
+AS
+	SELECT KhachHang.TenKhachHang AS N'Tên Khách hàng', COUNT(HoaDon.MaHoaDon) AS N'Số lượng đơn hàng'
+	FROM KhachHang
+	INNER JOIN HoaDon ON HoaDon.MaKhachHang = KhachHang.MaKhachHang
+	GROUP BY KhachHang.TenKhachHang;
+
+GO
+
+SELECT * FROM view_SoLuongDonHangTheoTenKhachHang
+
+GO
+
+DROP VIEW view_SoLuongDonHangTheoTenKhachHang
+
+GO
+
+-- 4. View chứa các sản phẩm thuộc danh mục 1 được giảm giá hơn 20% - Phan Anh Đức
+CREATE VIEW view_SanPhamDuocGiamGia
+AS
+    SELECT SanPham.MaSanPham, SanPham.TenSanPham, ChiTietHoaDon.GiamGia
+    FROM SanPham
+    INNER JOIN ChiTietHoaDon ON SanPham.MaSanPham = ChiTietHoaDon.MaSanPham
+    WHERE SanPham.MaDanhMuc = '1' AND ChiTietHoaDon.GiamGia > 0.2
+
+GO;
+
+SELECT * FROM view_SanPhamDuocGiamGia
+
+GO;
+
+DROP VIEW view_SanPhamDuocGiamGia
+
+GO;
+
+-- 5. View chứa doanh thu theo năm - Phan Huy Nguyên
+CREATE VIEW view_DoanhThuTheoNam 
+AS
+	SELECT YEAR(HoaDon.NgayGiao) AS N'Năm', SUM((1 - ChiTietHoaDon.GiamGia) * ChiTietHoaDon.DonGia * ChiTietHoaDon.SoLuong) AS 'Doanh Thu'
+	FROM HoaDon
+	INNER JOIN ChiTietHoaDon ON ChiTietHoaDon.MaHoaDon = HoaDon.MaHoaDon
+	GROUP BY YEAR(HoaDon.NgayGiao);
+
+GO;
+
+SELECT * FROM view_DoanhThuTheoNam
+
+GO;
+
+DROP VIEW view_DoanhThuTheoNam
+
+GO;
