@@ -26,7 +26,7 @@ CREATE TABLE NhaCungCap (
 );
 
 CREATE TABLE DanhMucSanPham (
-    MaDanhMuc CHAR(7) PRIMARY KEY,
+    MaDanhMuc CHAR(7) NOT NULL PRIMARY KEY,
     TenDanhMuc NVARCHAR(50),
     Mota NVARCHAR(225)
 );
@@ -35,7 +35,7 @@ CREATE TABLE SanPham (
     MaSanPham CHAR(7) NOT NULL PRIMARY KEY,
     TenSanPham VARCHAR(50),
     MaDanhMuc CHAR(7),
-    DonGia DECIMAL(10, 0),
+    DonGia MONEY,
     SoLuongTonKho INT,
     SoLuongDaBan INT,
     MaNhaCungCap CHAR(7),
@@ -44,7 +44,7 @@ CREATE TABLE SanPham (
 );
 
 CREATE TABLE GiaoHang (
-    MaNguoiGiaoHang CHAR(7)NOT NULL PRIMARY KEY,
+    MaNguoiGiaoHang CHAR(7) NOT NULL PRIMARY KEY,
     TenNguoiGiaoHang NVARCHAR(50),
     SoDienThoai NVARCHAR(10),
     NgaySinh DATE
@@ -384,11 +384,10 @@ CREATE FUNCTION func_SoLuongHoaDonMotKhachHang()
 AS
 BEGIN
     INSERT INTO @SoLuongHoaDon
-    SELECT KhachHang.MaKhachHang, KhachHang.TenKhachHang, COUNT(HoaDon.MaHoaDon) AS TongSoLuongDonHang
-    FROM KhachHang
-    INNER JOIN HoaDon ON HoaDon.MaKhachHang = KhachHang.MaKhachHang
-    GROUP BY KhachHang.TenKhachHang, KhachHang.MaKhachHang
-
+        SELECT KhachHang.MaKhachHang, KhachHang.TenKhachHang, COUNT(HoaDon.MaHoaDon) AS TongSoLuongDonHang
+        FROM KhachHang
+        INNER JOIN HoaDon ON HoaDon.MaKhachHang = KhachHang.MaKhachHang
+        GROUP BY KhachHang.TenKhachHang, KhachHang.MaKhachHang
 	RETURN
 END;
 
@@ -403,7 +402,7 @@ DROP FUNCTION func_SoLuongHoaDonMotKhachHang
 GO
 
 -- 3. Hàm tính giá trị trung bình các đơn hàng của mỗi khách hàng - Nguyễn Quang Huy
--- Công thức tính đơn giá: (SoLuong * DonGia) - (SoLuong * DonGia * GiamGia). 
+-- Công thức tính đơn giá: (SoLuong * DonGia) - (SoLuong * DonGia * GiamGia) = tongtien
 -- Rút gọn công thức (1 - GiamGia) * DonGia * SoLuong
 CREATE FUNCTION func_GiaTriTrungBinhCacHoaDonMoiKhachHang()
     RETURNS TABLE
@@ -471,7 +470,7 @@ CREATE FUNCTION func_XepLoaiKhachHang(@MaKhachHang VARCHAR(7))
     RETURNS INT
 AS
 BEGIN
-    DECLARE @TongChiTieu DECIMAL(18, 2)
+    DECLARE @TongChiTieu MONEY
     SELECT @TongChiTieu = SUM((1 - ChiTietHoaDon.GiamGia) * ChiTietHoaDon.DonGia * ChiTietHoaDon.SoLuong)
     FROM HoaDon
     INNER JOIN ChiTietHoaDon ON HoaDon.MaHoaDon = ChiTietHoaDon.MaHoaDon
@@ -538,31 +537,7 @@ DROP PROC proc_XemChiTietDonHang
 
 GO
 
--- 2. Thủ tục tính tổng doanh thu theo ngày - Phan Huy Nguyên
-CREATE PROC proc_TinhTongDoanhThuTheoNgay
-    @Ngay DATE
-AS BEGIN
-    IF NOT EXISTS (SELECT MaHoaDon FROM HoaDon WHERE NgayGiao = @Ngay)
-        PRINT N'Không có dữ liệu!'
-    ELSE
-        DECLARE @TongDoanhThu MONEY
-
-        SELECT @TongDoanhThu = SUM((1 - ChiTietHoaDon.GiamGia) * ChiTietHoaDon.DonGia * ChiTietHoaDon.SoLuong) 
-        FROM ChiTietHoaDon
-        WHERE MaHoaDon IN (SELECT MaHoaDon FROM HoaDon WHERE NgayGiao = @Ngay)
-
-        PRINT N'Tổng doanh thu của ngày ' + CAST(@Ngay AS VARCHAR(30)) + N' là: ' + CAST(@TongDoanhThu AS VARCHAR)
-END;
-
-EXEC proc_TinhTongDoanhThuTheoNgay @Ngay = '2021-10-21'
-
-GO;
-
-DROP PROC proc_TinhTongDoanhThuTheoNgay
-
-GO;
-
--- 3. Thủ tục xác nhận ngày giao hàng - Nguyễn Quang Huy
+-- 2. Thủ tục xác nhận ngày giao hàng - Nguyễn Quang Huy
 CREATE PROCEDURE proc_XacNhanNgayGiaoHang
     @MaHoaDon VARCHAR(7),
     @NgayGiao DATE
@@ -587,6 +562,30 @@ GO
 DROP PROC proc_XacNhanNgayGiaoHang
 
 GO
+
+-- 3. Thủ tục tính tổng doanh thu theo ngày - Phan Huy Nguyên
+CREATE PROC proc_TinhTongDoanhThuTheoNgay
+    @Ngay DATE
+AS BEGIN
+    IF NOT EXISTS (SELECT MaHoaDon FROM HoaDon WHERE NgayGiao = @Ngay)
+        PRINT N'Không có dữ liệu!'
+    ELSE
+        DECLARE @TongDoanhThu MONEY
+
+        SELECT @TongDoanhThu = SUM((1 - ChiTietHoaDon.GiamGia) * ChiTietHoaDon.DonGia * ChiTietHoaDon.SoLuong) 
+        FROM ChiTietHoaDon
+        WHERE MaHoaDon IN (SELECT MaHoaDon FROM HoaDon WHERE NgayGiao = @Ngay)
+
+        PRINT N'Tổng doanh thu của ngày ' + CAST(@Ngay AS VARCHAR(30)) + N' là: ' + CAST(@TongDoanhThu AS VARCHAR)
+END;
+
+EXEC proc_TinhTongDoanhThuTheoNgay @Ngay = '2021-10-21'
+
+GO;
+
+DROP PROC proc_TinhTongDoanhThuTheoNgay
+
+GO;
 
 -- 4. Thủ tục tình tổng doanh thu theo từng nhân viên - Phan Anh Đức
 CREATE PROCEDURE proc_DoanhThuTheoTungNhanVien
@@ -625,7 +624,7 @@ WHERE HoaDon.MaNhanVien = 'NV003';
 
 GO
 
--- 5. Thủ tục lấy thông tin shipper giao hàng theo thành phố - Nguyễn Hoàng Lâm
+-- 5. Thủ tục lấy thông tin người giao hàng theo thành phố - Nguyễn Hoàng Lâm
 CREATE PROCEDURE proc_ThongTinShipperOHanoi
     @ThanhPho NVARCHAR(20)
 AS
@@ -704,7 +703,7 @@ BEGIN
     PRINT N'Số lượng hóa đơn: ' + CAST(@SoLuongHoaDon AS NVARCHAR(20));
     PRINT N'----------------------------------';
 
-    FETCH NEXT FROM TongSoHoaDon_cur INTO @MaKhachHang, @TenKhachHang, @SoLuongHoaDon;
+    FETCH NEXT FROM cur_TongSoHoaDon INTO @MaKhachHang, @TenKhachHang, @SoLuongHoaDon;
 END;
 
 CLOSE cur_TongSoHoaDon;
@@ -831,6 +830,7 @@ DROP VIEW view_ThongTinSanPham
 GO
 
 -- 2. View thống kê tổng tiền của mỗi hóa đơn - Thái Cao Thiên Đạt
+-- (1 - GiamGia) * DonGia * SoLuong
 CREATE VIEW view_TongTienHoaDon 
 AS
     SELECT HoaDon.MaHoaDon, SUM((1 - ChiTietHoaDon.GiamGia) * ChiTietHoaDon.SoLuong * ChiTietHoaDon.DonGia) AS TongTien
@@ -901,3 +901,130 @@ GO;
 DROP VIEW view_DoanhThuTheoNam
 
 GO;
+
+/* Trigger (5trigger) */
+-- 1. Trigger tự động cập nhật số lượng tồn kho của sản phẩm - Phan Huy Nguyên
+CREATE TRIGGER trg_CapNhatTonKho ON ChiTietHoaDon AFTER INSERT
+AS BEGIN
+    UPDATE SanPham
+    SET SoLuongTonKho = SoLuongTonKho - (SELECT SoLuong FROM INSERTED)
+    FROM SanPham
+    WHERE SanPham.MaSanPham = (SELECT MaSanPham FROM INSERTED);
+END;
+
+GO;
+
+INSERT INTO ChiTietHoaDon (MaChiTietHoaDon, MaHoaDon, MaSanPham, DonGia, SoLuong, GiamGia)
+VALUES ('CT086', 'HD001', 'SP01', 10000, 4, 0.1);
+
+GO
+
+SELECT * FROM SanPham WHERE MaSanPham = 'SP01';
+
+SELECT * FROM ChiTietHoaDon
+
+GO;
+
+DROP TRIGGER trg_CapNhatTonKho
+
+GO;
+
+-- 2. Trigger để kiểm tra ngày sinh và ngày bắt đầu làm việc của nhân viên - Phan Anh Đức
+CREATE TRIGGER trig_KiemTraCapNhatNhanVien ON NhanVien AFTER INSERT, UPDATE
+AS
+BEGIN
+    DECLARE @NgaySinh DATE, @NgayĐauLamViec DATE;
+    SELECT @NgaySinh = NgaySinh, @NgayĐauLamViec = NgayDauLamViec FROM INSERTED;
+
+    IF (@NgaySinh > GETDATE())
+    BEGIN
+        PRINT(N'Ngày sinh không hợp lệ');
+        ROLLBACK TRAN;
+    END;
+
+    IF (@NgayĐauLamViec > GETDATE())
+    BEGIN
+        PRINT(N'Ngày sinh không hợp lệ');
+        ROLLBACK TRAN;
+    END;
+END;
+
+INSERT INTO ChiTietHoaDon 
+VALUES ('CT091', 'HD020', 'SP42', 320000, 24, 0.20)
+
+GO
+
+DROP TRIGGER trig_KiemTraCapNhatNhanVien
+
+GO;
+
+-- 3. Trigger để kiểm tra giá trị nhập vào trước khi thêm sản phẩm mới - Nguyễn Quang Huy
+CREATE TRIGGER trig_CheckGiaTriSanPham ON SanPham AFTER INSERT, UPDATE
+AS
+BEGIN
+    IF EXISTS (SELECT * FROM INSERTED WHERE DonGia <= 0 OR SoLuongTonKho <= 0)
+        BEGIN
+            PRINT(N'Giá trị không hợp lệ')
+            ROLLBACK TRAN
+        END;
+END;
+
+-- Kiểm tra với số lượng tồn kho -20
+INSERT INTO SanPham 
+VALUES ('SP56', 'Den pin thu nho', '12', 1300000, -20, 6, 'NCC010');
+
+SELECT * FROM SanPham
+
+GO
+
+DROP TRIGGER trig_CheckGiaTriSanPham
+
+GO;
+
+-- 4. Trigger để cập nhật số lượng đã bán của sản phẩm sau khi thêm chi tiết hóa đơn - Nguyễn Hoàng Lâm
+CREATE TRIGGER trig_CapNhatSoLuongDaBan ON ChiTietHoaDon AFTER INSERT
+AS
+BEGIN
+    UPDATE SanPham
+    SET SoLuongDaBan = SanPham.SoLuongDaBan + INSERTED.SoLuong
+    FROM SanPham
+    INNER JOIN INSERTED ON SanPham.MaSanPham = INSERTED.MaSanPham
+END;
+
+GO;
+
+DROP TRIGGER trig_CapNhatSoLuongDaBan
+
+GO
+
+SELECT * FROM SanPham WHERE MaSanPham = 'SP01';
+
+GO;
+
+INSERT INTO ChiTietHoaDon (MaChiTietHoaDon, MaHoaDon, MaSanPham, DonGia, SoLuong, GiamGia)
+VALUES ('CT090', 'HD003', 'SP01', 100000, 4, 0.1);
+
+GO;
+
+-- 5. Trigger kiểm tra ngày giao hàng - Thái Cao Thiên Đạt
+CREATE TRIGGER trig_KiemTraNgayDatHoaDon ON HoaDon AFTER INSERT, UPDATE
+AS
+BEGIN
+    DECLARE @NgayYeuCauGiao DATE;
+    DECLARE @NgayGiao DATE;
+    SELECT @NgayYeuCauGiao = NgayYeuCauGiao, @NgayGiao = NgayGiao FROM INSERTED;
+
+    IF @NgayYeuCauGiao > @NgayGiao
+    BEGIN
+        PRINT(N'Ngày giao hàng không hợp lệ');
+        ROLLBACK TRAN;
+    END;
+END;
+
+-- Kiểm tra ngay giao hàng
+INSERT INTO HoaDon
+VALUES ('HD021', 'KH016', 'NV005', '2023-12-27', '2023-12-30', '2023-12-29', 'GH016', '18/A My Tho', 'Quang Ninh', 'Vietnam');
+
+GO;
+
+DROP TRIGGER trig_KiemTraNgayDatHoaDon

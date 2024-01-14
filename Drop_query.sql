@@ -55,19 +55,26 @@ BEGIN
 END
 GO
 
-/* Remove system versioning */
-DECLARE @name VARCHAR(128)
-DECLARE @SQL VARCHAR(254)
+/* Remove all function */
+Declare @sql NVARCHAR(MAX) = N'';
 
-SELECT @name = (SELECT TOP 1 [name] FROM sysobjects WHERE [type] = 'U' AND category = 0 ORDER BY [name])
+SELECT @sql = @sql + N' DROP FUNCTION ' 
+                   + QUOTENAME(SCHEMA_NAME(schema_id)) 
+                   + N'.' + QUOTENAME(name)
+FROM sys.objects
+WHERE type_desc LIKE '%FUNCTION%';
 
-WHILE @name IS NOT NULL
-BEGIN
-    IF OBJECTPROPERTY(OBJECT_ID(' + @name + '), 'TableTemporalType') = 2 
-        SELECT @SQL = 'ALTER TABLE [dbo].[' + RTRIM(@name) +'] SET (SYSTEM_VERSIONING = OFF); ALTER TABLE [dbo].[' + RTRIM(@name) + '] DROP PERIOD FOR SYSTEM_TIME;'
-        EXEC (@SQL)
-        PRINT 'System Versioning Disabled for Table: ' + @name
-        SELECT @name = (SELECT TOP 1 [name] FROM sysobjects WHERE [type] = 'U' AND category = 0 AND [name] > @name ORDER BY [name])
-END
+Exec sp_executesql @sql
 GO
+
+/* Remove all proc */
+DECLARE @sql NVARCHAR(MAX) = N'';
+
+SELECT @sql += N'DROP PROCEDURE dbo.' + QUOTENAME(name) + ';' FROM sys.procedures
+WHERE name LIKE N'sp[_]%'
+AND SCHEMA_NAME(schema_id) = N'dbo';
+
+EXEC sp_executesql @sql;
+
+
 
