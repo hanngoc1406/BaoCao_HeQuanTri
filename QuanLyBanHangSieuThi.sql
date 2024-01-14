@@ -12,6 +12,8 @@ CREATE TABLE NhanVien (
     ThanhPho NVARCHAR(20),
     QuocGia NVARCHAR(20),
     SoDienThoai NVARCHAR(10),
+    TaiKhoan NVARCHAR(30),
+    MatKhau NVARCHAR(30)
 );
 
 CREATE TABLE NhaCungCap (
@@ -90,15 +92,15 @@ CREATE TABLE ChiTietHoaDon (
 
 INSERT INTO NhanVien 
 VALUES
-('NV001', 'Phan Anh Duc', 'Quan ly', '19900527', '20150517', 'Ha Dong', 'Ha Noi', 'Vietnam','0457635894'),
-('NV002', 'Thai Cao Thien Dat', 'Nhan vien', '19910617', '20160517', 'Dong Da', 'Ha Noi', 'Vietnam', '0856347856'),
-('NV003', 'Phan Huy Nguyen', 'Nhan vien', '19901028', '20151017', 'Dong Anh', 'Ha Noi', 'Vietnam', '0946523744'),
-('NV004', 'Nguyen Thu Huyen', 'Nhan vien', '19891212', '20160727', 'Le Hong Phong', 'Nam Dinh', 'Vietnam', '0783423654'),
-('NV005', 'Pham Hong Anh', 'Nhan vien', '19930210', '20170521', 'Me Linh', 'Ha Noi', 'Vietnam', '0836574856'),
-('NV006', 'Nguyen Hoang Anh', 'Nhan vien', '19900317', '20150830', 'Kien Xuong', 'Thai Binh', 'Vietnam', '0864753483'),
-('NV007', 'Do Dinh Thang', 'Ke toan', '19891223', '20150101', 'Kien Giang', 'Bac Giang', 'Vietnam', '0984672388'),
-('NV008', 'Nguyen Quang Huy', 'Nhan vien', '19880719', '20141215', 'Soc Son', 'Ha Noi', 'Vietnam', '0974562311'),
-('NV009', 'Nguyen Ngoc Quynh Chau', 'Quan ly', '19901021', '20141225', 'Ha Dong', 'Ha Noi', 'Vietnam', '0178455688');
+('NV001', 'Phan Anh Duc', 'Quan ly', '19900527', '20150517', 'Ha Dong', 'Ha Noi', 'Vietnam','0457635894', 'ducpa', 'password@123'),
+('NV002', 'Thai Cao Thien Dat', 'Nhan vien', '19910617', '20160517', 'Dong Da', 'Ha Noi', 'Vietnam', '0856347856', 'dattct', 'password@123'),
+('NV003', 'Phan Huy Nguyen', 'Nhan vien', '19901028', '20151017', 'Dong Anh', 'Ha Noi', 'Vietnam', '0946523744', 'nguyenph', 'password@123'),
+('NV004', 'Nguyen Thu Huyen', 'Nhan vien', '19891212', '20160727', 'Le Hong Phong', 'Nam Dinh', 'Vietnam', '0783423654', 'huyennt', 'password@123'),
+('NV005', 'Pham Hong Anh', 'Nhan vien', '19930210', '20170521', 'Me Linh', 'Ha Noi', 'Vietnam', '0836574856', 'anhph', 'password@123'),
+('NV006', 'Nguyen Hoang Anh', 'Nhan vien', '19900317', '20150830', 'Kien Xuong', 'Thai Binh', 'Vietnam', '0864753483', 'anhnh', 'password@123'),
+('NV007', 'Do Dinh Thang', 'Ke toan', '19891223', '20150101', 'Kien Giang', 'Bac Giang', 'Vietnam', '0984672388', 'thangdd', 'password@123'),
+('NV008', 'Nguyen Quang Huy', 'Nhan vien', '19880719', '20141215', 'Soc Son', 'Ha Noi', 'Vietnam', '0974562311', 'huynq', 'password@123'),
+('NV009', 'Nguyen Ngoc Quynh Chau', 'Quan ly', '19901021', '20141225', 'Ha Dong', 'Ha Noi', 'Vietnam', '0178455688', 'chaunnq', 'password@123');
 
 INSERT INTO NhaCungCap 
 VALUES
@@ -625,7 +627,7 @@ WHERE HoaDon.MaNhanVien = 'NV003';
 GO
 
 -- 5. Thủ tục lấy thông tin người giao hàng theo thành phố - Nguyễn Hoàng Lâm
-CREATE PROCEDURE proc_ThongTinShipperOHanoi
+CREATE PROCEDURE proc_ThongTinGiaoHang
     @ThanhPho NVARCHAR(20)
 AS
 BEGIN
@@ -643,11 +645,11 @@ END;
 
 GO
 
-EXEC proc_ThongTinShipperOHanoi 'Ho Chi Minh'
+EXEC proc_ThongTinGiaoHang 'Ho Chi Minh'
 
 GO
 
-DROP PROC proc_ThongTinShipperOHanoi
+DROP PROC proc_ThongTinGiaoHang
 
 /* Con trỏ (5contro) */
 -- 1. Con trỏ in ra tên sản phẩm và số lượng tồn kho - Nguyễn Hoàng Lâm
@@ -1028,3 +1030,91 @@ VALUES ('HD021', 'KH016', 'NV005', '2023-12-27', '2023-12-30', '2023-12-29', 'GH
 GO;
 
 DROP TRIGGER trig_KiemTraNgayDatHoaDon
+
+GO;
+
+/* Phân quyền (phanquyen) - Phan Anh Đức */
+CREATE ROLE QUANLY -- Thêm nhóm quyền role tên QUANLY 
+CREATE ROLE NHANVIEN -- Thêm nhóm quyền role tên NHANVIEN 
+CREATE ROLE KETOAN -- Thêm nhóm quyền role tên KETOAN 
+
+-- Thêm các quyền cho quản lý
+GRANT SELECT, INSERT, UPDATE, DELETE ON ChiTietHoaDon TO QUANLY
+GRANT SELECT, INSERT, UPDATE, DELETE ON DanhMucSanPham TO QUANLY
+GRANT SELECT, INSERT, UPDATE, DELETE ON GiaoHang TO QUANLY
+GRANT SELECT, INSERT, UPDATE, DELETE ON HoaDon TO QUANLY
+GRANT SELECT, INSERT, UPDATE, DELETE ON KhachHang TO QUANLY
+GRANT SELECT, INSERT, UPDATE, DELETE ON NhaCungCap TO QUANLY
+GRANT SELECT, INSERT, UPDATE, DELETE ON NhanVien TO QUANLY
+GRANT SELECT, INSERT, UPDATE, DELETE ON SanPham TO QUANLY
+GRANT EXECUTE ON dbo.proc_PhanQuyen  TO QUANLY
+
+-- Thêm các quyền cho nhân viên
+GRANT SELECT, INSERT, UPDATE ON ChiTietHoaDon TO NHANVIEN
+GRANT SELECT, INSERT, UPDATE ON DanhMucSanPham TO NHANVIEN
+GRANT SELECT, INSERT, UPDATE ON GiaoHang TO NHANVIEN
+GRANT SELECT, INSERT, UPDATE ON HoaDon TO NHANVIEN
+GRANT SELECT, INSERT, UPDATE ON KhachHang TO NHANVIEN
+GRANT SELECT, INSERT, UPDATE ON NhaCungCap TO NHANVIEN
+GRANT SELECT, INSERT, UPDATE ON NhanVien TO NHANVIEN
+GRANT SELECT, INSERT, UPDATE ON SanPham TO NHANVIEN
+
+-- Thêm các quyền cho kế toán
+GRANT SELECT ON ChiTietHoaDon TO KETOAN
+GRANT SELECT ON DanhMucSanPham TO KETOAN
+GRANT SELECT ON GiaoHang TO KETOAN
+GRANT SELECT ON HoaDon TO KETOAN
+GRANT SELECT ON KhachHang TO KETOAN
+GRANT SELECT ON NhaCungCap TO KETOAN
+GRANT SELECT ON NhanVien TO KETOAN
+GRANT SELECT ON SanPham TO KETOAN
+
+GO;
+
+CREATE PROC proc_PhanQuyen 
+    @MaNhanVien CHAR(7)
+AS 
+BEGIN
+    IF NOT EXISTS (SELECT MaNhanVien FROM NhanVien WHERE MaNhanVien = @MaNhanVien)
+        PRINT(N'Mã nhân viên không tồn tại')
+    ELSE
+        DECLARE @ChucVu NVARCHAR(30)
+        DECLARE @TaiKhoan NVARCHAR(30)
+        DECLARE @MatKhau NVARCHAR(30)
+
+        SELECT @ChucVu = ChucVu, @TaiKhoan = TaiKhoan, @MatKhau = MatKhau FROM NhanVien WHERE MaNhanVien = @MaNhanVien
+
+        EXEC sp_addlogin @TaiKhoan, @MatKhau 
+        EXEC sp_grantdbaccess @TaiKhoan, @TaiKhoan
+
+        IF @ChucVu = 'Quan ly'
+            EXEC sp_addrolemember 'QUANLY', @TaiKhoan
+        ELSE IF @ChucVu = 'Ke toan'
+            EXEC sp_addrolemember 'KETOAN', @TaiKhoan
+        ELSE
+            EXEC sp_addrolemember 'NHANVIEN', @TaiKhoan
+END;
+
+EXEC proc_PhanQuyen 'NV009'
+
+DROP PROC proc_PhanQuyen
+
+GO;
+
+CREATE PROC proc_ThuHoiQuyen
+    @MaNhanVien CHAR(7)
+AS BEGIN
+    IF NOT EXISTS (SELECT MaNhanVien FROM NhanVien WHERE MaNhanVien = @MaNhanVien)
+        PRINT(N'Mã nhân viên không tồn tại');
+    ELSE 
+        DECLARE @TaiKhoan NVARCHAR(30)
+        SELECT @TaiKhoan = TaiKhoan FROM NhanVien WHERE MaNhanVien = @MaNhanVien
+
+        EXECUTE sp_droplogin @TaiKhoan
+        EXECUTE sp_dropuser @TaiKhoan
+        PRINT(N'Tồn tại')
+END;
+
+EXEC proc_ThuHoiQuyen 'NV012'
+
+DROP PROC proc_ThuHoiQuyen

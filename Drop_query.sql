@@ -56,7 +56,7 @@ END
 GO
 
 /* Remove all function */
-Declare @sql NVARCHAR(MAX) = N'';
+DECLARE @sql NVARCHAR(MAX) = N'';
 
 SELECT @sql = @sql + N' DROP FUNCTION ' 
                    + QUOTENAME(SCHEMA_NAME(schema_id)) 
@@ -76,5 +76,19 @@ AND SCHEMA_NAME(schema_id) = N'dbo';
 
 EXEC sp_executesql @sql;
 
+GO;
 
+DECLARE @rolename sysname = 'role_name';
+DECLARE @cmd AS NVARCHAR(MAX) = N'';
+
+SELECT @cmd = @cmd + '
+    ALTER ROLE ' + QUOTENAME(@rolename) + ' DROP MEMBER ' + QUOTENAME(members.[name]) + ';'
+FROM sys.database_role_members AS rolemembers
+    JOIN sys.database_principals AS roles 
+        ON roles.[principal_id] = rolemembers.[role_principal_id]
+    JOIN sys.database_principals AS members 
+        ON members.[principal_id] = rolemembers.[member_principal_id]
+WHERE roles.[name]=@rolename
+
+EXEC(@cmd);
 
