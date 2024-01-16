@@ -358,16 +358,17 @@ INNER JOIN SanPham ON ChiTietHoaDon.MaSanPham = SanPham.MaSanPham;
 GO
 
 /* Hàm (5Ham)*/
--- 1. Hàm để kiểm tra tổng số lượng tồn kho của một danh mục - Nguyễn Hoàng Lâm
+-- 1. Hàm kiểm tra các sản phẩm và số lượng tồn kho của một danh mục - Nguyễn Hoàng Lâm
 CREATE FUNCTION func_SoLuongTonKhoMoiDanhMuc(@MaDanhMuc CHAR(7))
     RETURNS TABLE
 AS
 RETURN
 (
-    SELECT SUM(SanPham.SoLuongTonKho) AS SoLuong
+    SELECT SanPham.TenSanPham, SUM(SanPham.SoLuongTonKho) AS SoLuong
     FROM DanhMucSanPham
     INNER JOIN SanPham ON DanhMucSanPham.MaDanhMuc = SanPham.MaDanhMuc
     WHERE DanhMucSanPham.MaDanhMuc = @MaDanhMuc
+    GROUP BY SanPham.TenSanPham
 );
 
 GO;
@@ -380,7 +381,7 @@ DROP FUNCTION func_SoLuongTonKhoMoiDanhMuc
 
 GO;
 
--- 2. Hàm tính tổng số lượng đơn hàng của một khách hàng - Thái Cao Thiên Đạt
+-- 2. Hàm tính tổng số lượng đơn hàng của mỗi khách hàng - Thái Cao Thiên Đạt
 CREATE FUNCTION func_SoLuongHoaDonMotKhachHang()
     RETURNS @SoLuongHoaDon TABLE (MaKhachHang CHAR(7), TenKhachHang NVARCHAR(50), TongSoLuongDonHang INT)
 AS
@@ -411,7 +412,7 @@ CREATE FUNCTION func_GiaTriTrungBinhCacHoaDonMoiKhachHang()
 AS
 RETURN
 (
-    SELECT KhachHang.MaKhachHang, KhachHang.TenKhachHang, AVG((1 - ChiTietHoaDon.GiamGia) * ChiTietHoaDon.SoLuong * ChiTietHoaDon.DonGia) AS TrungBinh
+    SELECT KhachHang.MaKhachHang, KhachHang.TenKhachHang, AVG((1 - ChiTietHoaDon.GiamGia) * ChiTietHoaDon.SoLuong * ChiTietHoaDon.DonGia) AS GiaTriTrungBinhDonHang
     FROM KhachHang
     INNER JOIN HoaDon ON HoaDon.MaKhachHang = KhachHang.MaKhachHang
     INNER JOIN ChiTietHoaDon ON ChiTietHoaDon.MaHoaDon = HoaDon.MaHoaDon
@@ -605,7 +606,7 @@ BEGIN
         INNER JOIN HoaDon ON HoaDon.MaHoaDon = ChiTietHoaDon.MaHoaDon
         WHERE HoaDon.MaNhanVien = @MaNhanVien;
 
-        PRINT 'Tong doanh thu do Nhan Vien ' + @MaNhanVien + ': ' + CAST(@TongDoanhThu AS VARCHAR(50));
+        PRINT 'Tong doanh thu cua nhan Vien ' + @MaNhanVien + ' la: ' + CAST(@TongDoanhThu AS VARCHAR(50));
 END;
 
 GO
@@ -636,7 +637,7 @@ BEGIN
         KhachHang.TenKhachHang,
         KhachHang.SoDienThoai AS SoDienThoaiKhachHang,
         GiaoHang.TenNguoiGiaoHang,
-        GiaoHang.SoDienThoai AS SoDienThoaiShipper
+        GiaoHang.SoDienThoai AS SoDienThoaiNguoiGiaoHang
     FROM HoaDon
     INNER JOIN KhachHang ON KhachHang.MaKhachHang = HoaDon.MaKhachHang
     INNER JOIN GiaoHang ON GiaoHang.MaNguoiGiaoHang = HoaDon.MaNguoiGiaoHang
@@ -645,7 +646,7 @@ END;
 
 GO
 
-EXEC proc_ThongTinGiaoHang 'Ho Chi Minh'
+EXEC proc_ThongTinGiaoHang 'Ha Noi'
 
 GO
 
@@ -737,7 +738,7 @@ BEGIN
     PRINT N'Số điện thoại: ' + @SoDienThoai;
     PRINT N'----------------------------------';
     
-    FETCH NEXT FROM DanhSachNhaCungCap_cur INTO @MaNhaCungCap, @TenCongTy, @TenNguoiDaiDien, @SoDienThoai;
+    FETCH NEXT FROM cur_DanhSachNhaCungCap INTO @MaNhaCungCap, @TenCongTy, @TenNguoiDaiDien, @SoDienThoai;
 END;
 
 CLOSE cur_DanhSachNhaCungCap;
@@ -917,7 +918,7 @@ END;
 GO;
 
 INSERT INTO ChiTietHoaDon (MaChiTietHoaDon, MaHoaDon, MaSanPham, DonGia, SoLuong, GiamGia)
-VALUES ('CT086', 'HD001', 'SP01', 10000, 4, 0.1);
+VALUES ('CT088', 'HD001', 'SP01', 10000, 3, 0.1);
 
 GO
 
@@ -931,7 +932,32 @@ DROP TRIGGER trg_CapNhatTonKho
 
 GO;
 
--- 2. Trigger để kiểm tra ngày sinh và ngày bắt đầu làm việc của nhân viên - Phan Anh Đức
+-- 2. Trigger để cập nhật số lượng đã bán của sản phẩm sau khi thêm chi tiết hóa đơn - Nguyễn Hoàng Lâm
+CREATE TRIGGER trig_CapNhatSoLuongDaBan ON ChiTietHoaDon AFTER INSERT
+AS
+BEGIN
+    UPDATE SanPham
+    SET SoLuongDaBan = SanPham.SoLuongDaBan + INSERTED.SoLuong
+    FROM SanPham
+    INNER JOIN INSERTED ON SanPham.MaSanPham = INSERTED.MaSanPham
+END;
+
+GO;
+
+DROP TRIGGER trig_CapNhatSoLuongDaBan
+
+GO
+
+SELECT * FROM SanPham WHERE MaSanPham = 'SP01';
+
+GO;
+
+INSERT INTO ChiTietHoaDon (MaChiTietHoaDon, MaHoaDon, MaSanPham, DonGia, SoLuong, GiamGia)
+VALUES ('CT090', 'HD003', 'SP01', 100000, 4, 0.1);
+
+GO;
+
+-- 3. Trigger để kiểm tra ngày sinh và ngày bắt đầu làm việc của nhân viên - Phan Anh Đức
 CREATE TRIGGER trig_KiemTraCapNhatNhanVien ON NhanVien AFTER INSERT, UPDATE
 AS
 BEGIN
@@ -960,7 +986,7 @@ DROP TRIGGER trig_KiemTraCapNhatNhanVien
 
 GO;
 
--- 3. Trigger để kiểm tra giá trị nhập vào trước khi thêm sản phẩm mới - Nguyễn Quang Huy
+-- 4. Trigger để kiểm tra giá trị nhập vào trước khi thêm sản phẩm mới - Nguyễn Quang Huy
 CREATE TRIGGER trig_CheckGiaTriSanPham ON SanPham AFTER INSERT, UPDATE
 AS
 BEGIN
@@ -980,31 +1006,6 @@ SELECT * FROM SanPham
 GO
 
 DROP TRIGGER trig_CheckGiaTriSanPham
-
-GO;
-
--- 4. Trigger để cập nhật số lượng đã bán của sản phẩm sau khi thêm chi tiết hóa đơn - Nguyễn Hoàng Lâm
-CREATE TRIGGER trig_CapNhatSoLuongDaBan ON ChiTietHoaDon AFTER INSERT
-AS
-BEGIN
-    UPDATE SanPham
-    SET SoLuongDaBan = SanPham.SoLuongDaBan + INSERTED.SoLuong
-    FROM SanPham
-    INNER JOIN INSERTED ON SanPham.MaSanPham = INSERTED.MaSanPham
-END;
-
-GO;
-
-DROP TRIGGER trig_CapNhatSoLuongDaBan
-
-GO
-
-SELECT * FROM SanPham WHERE MaSanPham = 'SP01';
-
-GO;
-
-INSERT INTO ChiTietHoaDon (MaChiTietHoaDon, MaHoaDon, MaSanPham, DonGia, SoLuong, GiamGia)
-VALUES ('CT090', 'HD003', 'SP01', 100000, 4, 0.1);
 
 GO;
 
@@ -1075,24 +1076,21 @@ CREATE PROC proc_PhanQuyen
     @MaNhanVien CHAR(7)
 AS 
 BEGIN
-    IF NOT EXISTS (SELECT MaNhanVien FROM NhanVien WHERE MaNhanVien = @MaNhanVien)
-        PRINT(N'Mã nhân viên không tồn tại')
+    DECLARE @ChucVu NVARCHAR(30)
+    DECLARE @TaiKhoan NVARCHAR(30)
+    DECLARE @MatKhau NVARCHAR(30)
+
+    SELECT @ChucVu = ChucVu, @TaiKhoan = TaiKhoan, @MatKhau = MatKhau FROM NhanVien WHERE MaNhanVien = @MaNhanVien
+
+    EXEC sp_addlogin @TaiKhoan, @MatKhau 
+    EXEC sp_grantdbaccess @TaiKhoan, @TaiKhoan
+
+    IF @ChucVu = 'Quan ly'
+        EXEC sp_addrolemember 'QUANLY', @TaiKhoan
+    ELSE IF @ChucVu = 'Ke toan'
+        EXEC sp_addrolemember 'KETOAN', @TaiKhoan
     ELSE
-        DECLARE @ChucVu NVARCHAR(30)
-        DECLARE @TaiKhoan NVARCHAR(30)
-        DECLARE @MatKhau NVARCHAR(30)
-
-        SELECT @ChucVu = ChucVu, @TaiKhoan = TaiKhoan, @MatKhau = MatKhau FROM NhanVien WHERE MaNhanVien = @MaNhanVien
-
-        EXEC sp_addlogin @TaiKhoan, @MatKhau 
-        EXEC sp_grantdbaccess @TaiKhoan, @TaiKhoan
-
-        IF @ChucVu = 'Quan ly'
-            EXEC sp_addrolemember 'QUANLY', @TaiKhoan
-        ELSE IF @ChucVu = 'Ke toan'
-            EXEC sp_addrolemember 'KETOAN', @TaiKhoan
-        ELSE
-            EXEC sp_addrolemember 'NHANVIEN', @TaiKhoan
+        EXEC sp_addrolemember 'NHANVIEN', @TaiKhoan
 END;
 
 EXEC proc_PhanQuyen 'NV009'
@@ -1104,17 +1102,14 @@ GO;
 CREATE PROC proc_ThuHoiQuyen
     @MaNhanVien CHAR(7)
 AS BEGIN
-    IF NOT EXISTS (SELECT MaNhanVien FROM NhanVien WHERE MaNhanVien = @MaNhanVien)
-        PRINT(N'Mã nhân viên không tồn tại');
-    ELSE 
-        DECLARE @TaiKhoan NVARCHAR(30)
-        SELECT @TaiKhoan = TaiKhoan FROM NhanVien WHERE MaNhanVien = @MaNhanVien
+    DECLARE @TaiKhoan NVARCHAR(30)
+    SELECT @TaiKhoan = TaiKhoan FROM NhanVien WHERE MaNhanVien = @MaNhanVien
 
-        EXECUTE sp_droplogin @TaiKhoan
-        EXECUTE sp_dropuser @TaiKhoan
-        PRINT(N'Tồn tại')
+    EXECUTE sp_droplogin @TaiKhoan
+    EXECUTE sp_dropuser @TaiKhoan
+    PRINT(N'Đã xóa quyền!')
 END;
 
-EXEC proc_ThuHoiQuyen 'NV012'
+EXEC proc_ThuHoiQuyen 'NV009'
 
 DROP PROC proc_ThuHoiQuyen
